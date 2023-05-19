@@ -208,6 +208,48 @@ static inline int mw_iszero(const size_t n, const word_t* const w)
 	return 1;
 }
 
+static inline void mw_filt(const size_t n, word_t* const wnew, const word_t* const w, const int B, const word_t f)
+{
+	const int WB = WBITS-B;
+	const word_t BMASK = WONES>>WB; // mask to clear bits above 1st B
+	size_t k = 0;
+	for (;k<n-1;++k) {
+		size_t wk = w[k];
+		int i = 0;
+		for (;i<WB;   ++i,wk>>=1) PUTBIT(wnew[k],i,BITON(f,wk&BMASK));
+		wk |= (w[k+1]<<B); // splice in next word
+		for (;i<WBITS;++i,wk>>=1) PUTBIT(wnew[k],i,BITON(f,wk&BMASK));
+
+	}
+	// need to wrap for the last word
+	word_t wk = w[n-1];
+	int i = 0;
+	for (;i<WB;   ++i,wk>>=1) PUTBIT(wnew[k],i,BITON(f,wk&BMASK));
+	wk |= (w[0]<<B); // splice in lo-word
+	for (;i<WBITS;++i,wk>>=1) PUTBIT(wnew[k],i,BITON(f,wk&BMASK));
+}
+
+static inline void mw_filtx(const size_t n, word_t* const wnew, const word_t* const w, const int B, const word_t* const f)
+{
+	const int WB = WBITS-B;
+	const word_t BMASK = WONES>>WB; // mask to clear bits above 1st B
+	size_t k = 0;
+	for (;k<n-1;++k) {
+		size_t wk = w[k];
+		int i = 0;
+		for (;i<WB;   ++i,wk>>=1) {const int b = (int)(wk&BMASK); PUTBIT(wnew[k],i,BITON(f[b/B],b%B));}
+		wk |= (w[k+1]<<B); // splice in next word
+		for (;i<WBITS;++i,wk>>=1) {const int b = (int)(wk&BMASK); PUTBIT(wnew[k],i,BITON(f[b/B],b%B));}
+
+	}
+	// need to wrap for the last word
+	word_t wk = w[n-1];
+	int i = 0;
+	for (;i<WB;   ++i,wk>>=1) {const int b = (int)(wk&BMASK); PUTBIT(wnew[k],i,BITON(f[b/B],b%B));}
+	wk |= (w[0]<<B); // splice in lo-word
+	for (;i<WBITS;++i,wk>>=1) {const int b = (int)(wk&BMASK); PUTBIT(wnew[k],i,BITON(f[b/B],b%B));}
+}
+
 static inline void mw_filter(const size_t n, word_t* const wnew, const word_t* const w, const int B, const word_t* const f)
 {
 	const int WB = WBITS-B;
