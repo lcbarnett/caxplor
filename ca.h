@@ -37,8 +37,7 @@ static inline double rt_lambda(const int B, const word_t* const rtab) // Langton
 
 static inline size_t rt_nwords(const int B)
 {
-	const size_t N = POW2(B)/WBITS;
-	return (N == 0 ? 1 : N);
+	return B > 6 ? POW2(B-6) : 1;
 }
 
 static inline void rt_randomise(const int B, word_t* const rtab, const double lam, mt_t* const prng)
