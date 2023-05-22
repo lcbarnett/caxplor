@@ -2,33 +2,63 @@
 #include "utils.h"
 
 /*********************************************************************/
-/*                      rule table stack                             */
+/*              rule table (double-linked) list                         */
 /*********************************************************************/
 
-rts_t* rts_push(rts_t* top, const int B)
+rtl_t* rtl_add(rtl_t* curr, const int B) // insert after
 {
-	rts_t* const oldtop = top;
-	top = malloc(sizeof(rts_t));
-	PASSERT(top != NULL,"memory allocation failed");
-	top->prev = oldtop;
-	top->rtab = rt_alloc(B);
-	return top;
+	if (curr == NULL) { // empty list
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = NULL;
+		curr->prev = NULL;
+	}
+	else {
+		rtl_t* const newprev = curr;
+		rtl_t* const newnext = curr->next;
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = newnext;
+		curr->prev = newprev;
+		newprev->next = curr;
+		if (newnext != NULL) newnext->prev = curr; // not at end of list
+	}
+	curr->filt = NULL;
+	curr->rtab = rt_alloc(B);
+	return curr;
 }
 
-rts_t* rts_pop(rts_t* top)
+rtl_t* rtl_del(rtl_t* curr)
 {
-	PASSERT(top != NULL,"pop too much");
-	rts_t* const oldtop = top;
-	top = oldtop->prev;
-	free(oldtop->rtab);
-	free(oldtop);
-	return top;
+	if (curr == NULL) return NULL; // nothing to delete
+	rtl_t* const oldcurr = curr;
+	if (oldcurr->next == NULL) { // end of list
+		if (oldcurr->prev == NULL) { // only 1 item in list!
+			curr = NULL;
+		}
+		else {
+			curr = oldcurr->prev;
+			curr->next = NULL;
+		}
+	}
+	else {
+		curr = oldcurr->next;
+		if (oldcurr->prev == NULL) { // beginning of list
+			curr->prev = NULL;
+		}
+		else {
+			curr->prev = oldcurr->prev;
+			oldcurr->prev->next = curr;
+		}
+	}
+	free(oldcurr->rtab);
+	rtl_free(oldcurr->filt);
+	return curr;
 }
 
-rts_t* rts_free(rts_t* top)
+void rtl_free(rtl_t* curr)
 {
-	while (top != NULL) top = rts_pop(top);
-	return NULL;
+	while (curr != NULL) curr = rtl_del(curr);
 }
 
 /*********************************************************************/

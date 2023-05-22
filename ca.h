@@ -7,17 +7,19 @@
 #include "word.h"
 
 /*********************************************************************/
-/*                      rule table stack                             */
+/*              rule table (double-linked) list                      */
 /*********************************************************************/
 
-typedef struct rts_node {
+typedef struct rtl_node {
 	word_t*          rtab;
-	struct rts_node* prev;
-} rts_t;
+	struct rtl_node* prev;
+	struct rtl_node* next;
+	struct rtl_node* filt; // pointer to filter list
+} rtl_t;
 
-rts_t*  rts_push       (rts_t* top, const int B);
-rts_t*  rts_pop        (rts_t* top);
-rts_t*  rts_free       (rts_t* top);
+rtl_t*  rtl_add  (rtl_t* curr, const int B); // insert after
+rtl_t*  rtl_del  (rtl_t* curr);
+void    rtl_free (rtl_t* curr);
 
 /*********************************************************************/
 /*                      rule table                                   */

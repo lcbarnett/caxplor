@@ -6,7 +6,20 @@
 #include "clap.h"
 #include "strman.h"
 
-int sim_viz(int argc, char* argv[])
+void print_id(const int B, const rtl_t* const rtl, const int F, const int filtering)
+{
+	printf("CA id = ");
+	rt_print_id(B,rtl->rtab);
+	printf(", lambda = %6.4f",rt_lambda(B,rtl->rtab));
+	if (rtl->filt != NULL && filtering) {
+		printf(" : filter id = ");
+		rt_print_id(F,rtl->filt->rtab);
+		printf(", lambda = %6.4f",rt_lambda(F,rtl->filt->rtab));
+	}
+	putchar('\n');
+}
+
+int sim_xplor(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -128,35 +141,40 @@ int sim_viz(int argc, char* argv[])
 	char usagestr[] =
 		"Keys:\n"
 		"-----\n\n"
-		"h : display this help\n"
-		"m : toggle CA/filter mode\n"
-		"n : new random CA\n"
-		"N : new CA from user-supplied id\n"
-		"b : back to previous CA/filter\n"
-		"v : invert CA/filter\n"
-		"f : forward CA one screen\n"
-		"i : re-initialise CA\n"
-		"e : plot entropy of CA rule\n"
-		"t : plot 1-lag DD of CA rule and filter rule\n"
-		"p : calculate CA period\n"
-		"s : save CA/filter id to file\n"
-		"w : write CA image to file\n"
-		"q : (or ESC) exit program\n";
+		"h  : display this help\n"
+		"m  : toggle CA/filter mode\n"
+		"n  : new random CA/filter\n"
+		"N  : new CA/filter from user-supplied id\n"
+		"d  : (or DEL) delete CA/filter\n"
+		"-> : next CA/filter\n"
+		"<- : previous CA/filter\n"
+		"v  : invert CA/filter\n"
+		"f  : forward CA one screen\n"
+		"i  : re-initialise CA\n"
+		"e  : plot entropy of CA rule\n"
+		"t  : plot 1-lag DD of CA rule and filter rule\n"
+		"p  : calculate CA period\n"
+		"s  : save CA/filter id to file\n"
+		"w  : write CA image to file\n"
+		"q  : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
 
-	// initialise CA rule table stack
-	rts_t* rts = rts_push(NULL,B); // zero-initialised CA
-	printf("exploring : initial CA : id = "); rt_print_id(B,rts->rtab);
-	printf(", lambda = %6.4f\n",rt_lambda(B,rts->rtab));
+	// initialise CA rule table list with random
+
+	rtl_t* rtl = rtl_add(NULL,B); // this should never be NULL - there should laways be a CA rule!
+	rt_randomise(B,rtl->rtab,rlam,&rrng);
+	printf("exploring : random CA : id = "); rt_print_id(B,rtl->rtab);
+	printf(", lambda = %6.4f\n",rt_lambda(B,rtl->rtab));
+	mw_randomise(n,ca,&irng);
+	ca_run(I,n,ca,B,rtl->rtab);
+	if (untwist) {
+		mw_copy(nwords,wca,ca);
+		ca_rotl(I,n,ca,wca,uto);
+	}
+	ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 	printf("%s : ",modestr);
 	fflush(stdout);
-
-	// initialise filter rule table stack
-	rts_t* fts = NULL;
-
-	// initial CA
-	ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 
 	// window event loop
 	while (1) {
@@ -176,162 +194,221 @@ int sim_viz(int argc, char* argv[])
 		}
 
 		// we only take action on (some) key-presses
-		char  key;
+		if (event.type != KeyPress) continue;
+		char key;
 		KeySym keysym;
-		if (!(event.type == KeyPress && XLookupString(&event.xkey,&key,1,&keysym,NULL) == 1)) continue;
+		int kret = XLookupString(&event.xkey,&key,1,&keysym,NULL);
 		if (key == 27) key = 'q'; // map ESC to 'q' for quit
+		if (keysym == 65361) {key = 37;  kret = 1;} // map to left-arrow
+		if (keysym == 65363) {key = 39;  kret = 1;} // map to right-arrow
+		if (keysym == 65535) {key = 'd'; kret = 1;} // map to delete
+// fprintf(stderr,"key = %c, keysym = %lu\n",key,keysym);
+		if (kret != 1) continue;
 
 		switch (key) {
 
 		case 'm': // toggle CA/filter mode
 
-			if (filtering) { // clear filters
-				fts = rts_free(fts);
-				sftid = 0;
-			}
+			printf("switching mode : ");
 			filtering = 1-filtering;
-			ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
-			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
+			if (filtering && rtl->filt != NULL) {
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
+				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+			}
+			else {
+				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+			}
 			strncpy(modestr,filtering ? "filtering" : "exploring",mslen);
-			printf("entering %s mode\n",modestr);
+			print_id(B,rtl,F,filtering);
+			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
 		case 'n': // new random CA/filter
 
 			if (filtering) {
-				fts = rts_push(fts,F);
-				rt_randomise(F,fts->rtab,flam,&frng);
-				printf("random filter : id = "); rt_print_id(F,fts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(F,fts->rtab));
-				ca_filter(I,n,fca,ca,F,fts->rtab);
+				printf("new random filter : ");
+				rtl->filt = rtl_add(rtl->filt,F);
+				rt_randomise(F,rtl->filt->rtab,flam,&frng);
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
-				sftid = 0;
 			}
 			else {
-				rts = rts_push(rts,B);
-				rt_randomise(B,rts->rtab,rlam,&rrng);
-				printf("random CA : id = "); rt_print_id(B,rts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(B,rts->rtab));
+				printf("new random CA : ");
+				rtl = rtl_add(rtl,B);
+				rt_randomise(B,rtl->rtab,rlam,&rrng);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rts->rtab);
+				ca_run(I,n,ca,B,rtl->rtab);
 				if (untwist) {
 					mw_copy(nwords,wca,ca);
 					ca_rotl(I,n,ca,wca,uto);
 				}
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
-				srtid = 0;
-				sftid = 0;
 			}
+			print_id(B,rtl,F,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
 		case 'N': // new user-supplied CA/filter
 
 			if (filtering) {
-				fts = rts_push(fts,F);
+				rtl_add(rtl->filt,F);
 				printf("enter filter id : ");
 				fflush(stdout);
-				rt_fread(F,fts->rtab,stdin);
-				printf("filtering : user-supplied filter : id = "); rt_print_id(F,fts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(F,fts->rtab));
-				fflush(stdout);
-				ca_filter(I,n,fca,ca,F,fts->rtab);
+				rt_fread(F,rtl->filt->rtab,stdin);
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
-				sftid = 0;
 			}
 			else {
-				rts = rts_push(rts,B);
+				rtl = rtl_add(rtl,B);
 				printf("enter CA id : "); // prompt for rtid
 				fflush(stdout);
-				rt_fread(B,rts->rtab,stdin);
-				printf("exploring : user-supplied CA : id = "); rt_print_id(B,rts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(B,rts->rtab));
-				fflush(stdout);
+				rt_fread(B,rtl->rtab,stdin);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rts->rtab);
+				ca_run(I,n,ca,B,rtl->rtab);
 				if (untwist) {
 					mw_copy(nwords,wca,ca);
 					ca_rotl(I,n,ca,wca,uto);
 				}
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
-				srtid = 0;
-				sftid = 0;
 			}
+			print_id(B,rtl,F,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
-		case 'b': // back to previous CA or filter
+		case 'd': // delete CA or filter from list
 
 			if (filtering) {
-				if (fts == NULL) {
-					printf("previous filter : no filter!\n");
+				if (rtl->filt == NULL) {
+					printf("no filter to delete!\n");
+					fflush(stdout);
 					break;
 				}
-				if (fts->prev == NULL) {
-					printf("previous filter : can't go back!\n");
-					break;
+				printf("deleting filter : ");
+				rtl->filt = rtl_del(rtl->filt);
+				if (rtl->filt == NULL) {
+					ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 				}
-				// pop previous filter off stack
-				fts = rts_pop(fts);
-				printf("previous filter : id = "); rt_print_id(F,fts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(F,fts->rtab));
-				fflush(stdout);
-				ca_filter(I,n,fca,ca,F,fts->rtab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
-				sftid = 0;
+				else {
+					ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
+					ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				}
 			}
 			else {
-				if (rts->prev == NULL) {
-					printf("previous CA : can't go back!\n");
+				if (rtl->prev == NULL && rtl->next == NULL) {
+					printf("last CA rule - won't delete!\n");
+					fflush(stdout);
 					break;
 				}
-				// pop previous CA off stack
-				rts = rts_pop(rts);
-				printf("previous CA : id = "); rt_print_id(B,rts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(B,rts->rtab));
+				printf("deleting CA : ");
+				rtl = rtl_del(rtl);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rts->rtab);
+				ca_run(I,n,ca,B,rtl->rtab);
 				if (untwist) {
 					mw_copy(nwords,wca,ca);
 					ca_rotl(I,n,ca,wca,uto);
 				}
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
-				srtid = 0;
+			}
+			print_id(B,rtl,F,filtering);
+			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
+			break;
+
+		case 37: // back to previous CA or filter in list
+
+			if (filtering) {
+				if (rtl->filt == NULL) {
+					printf("previous filter : no filter!\n");
+					break;
+				}
+				if (rtl->filt->prev == NULL) {
+					printf("previous filter : can't go back!\n");
+					break;
+				}
+				printf("previous filter : ");
+				rtl->filt = rtl->filt->prev;
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
+				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 				sftid = 0;
 			}
+			else {
+				if (rtl->prev == NULL) {
+					printf("previous CA : can't go back!\n");
+					break;
+				}
+				printf("previous CA : ");
+				rtl = rtl->prev;
+				mw_randomise(n,ca,&irng);
+				ca_run(I,n,ca,B,rtl->rtab);
+				if (untwist) {
+					mw_copy(nwords,wca,ca);
+					ca_rotl(I,n,ca,wca,uto);
+				}
+				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+			}
+			print_id(B,rtl,F,filtering);
+			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
+			break;
+
+		case 39: // forward to next CA or filter in list
+
+			if (filtering) {
+				if (rtl->filt == NULL) {
+					printf("next filter : no filter!\n");
+					break;
+				}
+				if (rtl->filt->next == NULL) {
+					printf("next filter : can't go forward!\n");
+					break;
+				}
+				printf("next filter : ");
+				rtl->filt = rtl->filt->next;
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
+				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+			}
+			else {
+				if (rtl->next == NULL) {
+					printf("next CA : can't go forward!\n");
+					break;
+				}
+				printf("next CA : ");
+				rtl = rtl->next;
+				mw_randomise(n,ca,&irng);
+				ca_run(I,n,ca,B,rtl->rtab);
+				if (untwist) {
+					mw_copy(nwords,wca,ca);
+					ca_rotl(I,n,ca,wca,uto);
+				}
+				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+			}
+			print_id(B,rtl,F,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
 		case 'v': // invert CA/filter rule
 
 			if (filtering) {
-				if (fts == NULL) {
+				if (rtl->filt == NULL) {
 					printf("inverting filter : no filter!\n");
 					break;
 				}
-				rt_invert(F,fts->rtab);
-				printf("inverting filter : id = "); rt_print_id(F,fts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(F,fts->rtab));
-				ca_filter(I,n,fca,ca,F,fts->rtab);
+				printf("inverting filter : ");
+				rt_invert(F,rtl->filt->rtab);
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 				flam = 1.0-flam;
-				sftid = 0;
 			}
 			else {
-// printf("\nbefore\n"); rt_print(B,rts->rtab);
-				rt_invert(B,rts->rtab);
-// printf("after\n"); rt_print(B,rts->rtab);
-				printf("inverting CA : id = "); rt_print_id(B,rts->rtab);
-				printf(", lambda = %6.4f\n",rt_lambda(B,rts->rtab));
-				ca_run(I,n,ca,B,rts->rtab);
+				printf("inverting CA : ");
+				rt_invert(B,rtl->rtab);
+				ca_run(I,n,ca,B,rtl->rtab);
 				if (untwist) {
 					mw_copy(nwords,wca,ca);
 					ca_rotl(I,n,ca,wca,uto);
 				}
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 				rlam = 1.0-rlam;
-				srtid = 0;
 			}
+			print_id(B,rtl,F,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
@@ -340,13 +417,13 @@ int sim_viz(int argc, char* argv[])
 			printf("fast-forward CA\n");
 			fflush(stdout);
 			mw_copy(n,ca,ca+(I-1)*n);
-			ca_run(I,n,ca,B,rts->rtab);
+			ca_run(I,n,ca,B,rtl->rtab);
 			if (untwist) {
 				mw_copy(nwords,wca,ca);
 				ca_rotl(I,n,ca,wca,uto);
 			}
-			if (fts != NULL) {
-				ca_filter(I,n,fca,ca,F,fts->rtab);
+			if (rtl->filt != NULL) {
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 			}
 			else {
@@ -357,15 +434,15 @@ int sim_viz(int argc, char* argv[])
 
 		case 'i': // re-initialise and rerun
 
-			printf("re-initialising CA\n");
+			printf("re-initialise CA\n");
 			mw_randomise(n,ca,&irng);
-			ca_run(I,n,ca,B,rts->rtab);
+			ca_run(I,n,ca,B,rtl->rtab);
 			if (untwist) {
 				mw_copy(nwords,wca,ca);
 				ca_rotl(I,n,ca,wca,uto);
 			}
-			if (fts != NULL) {
-				ca_filter(I,n,fca,ca,F,fts->rtab);
+			if (rtl->filt != NULL) {
+				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 			}
 			else {
@@ -382,11 +459,11 @@ int sim_viz(int argc, char* argv[])
 			else {
 				printf("saving CA rule id\n");
 				fprintf(rtfs,"B =%2d, id = ",B);
-				rt_fprint_id(B,rts->rtab,rtfs);
+				rt_fprint_id(B,rtl->rtab,rtfs);
 				fputc('\n',rtfs);
 				srtid = 1;
 			}
-			if (fts != NULL) {
+			if (rtl->filt != NULL) {
 				if (sftid) {
 					printf("filter rule id already saved\n");
 					fflush(stdout);
@@ -395,7 +472,7 @@ int sim_viz(int argc, char* argv[])
 					printf("saving filter rule id\n");
 					fflush(stdout);
 					fprintf(rtfs,"\tF =%2d, id = ",F);
-					rt_fprint_id(F,fts->rtab,rtfs);
+					rt_fprint_id(F,rtl->filt->rtab,rtfs);
 					fputc('\n',rtfs);
 					sftid = 1;
 				}
@@ -406,24 +483,24 @@ int sim_viz(int argc, char* argv[])
 
 			++imseq;
 			snprintf(strbuf,strbuflen,"%s/ca_%03d.%s",imdir,imseq,imfmt);
-			printf("writing CA image to %s\n",strbuf);
-			fflush(stdout);
+			printf("writing CA image to %s",strbuf);
 			ca_image_write_file(I,n,ca,ppc,imfmt,strbuf,0);
-			if (fts != NULL) {
+			if (rtl->filt != NULL) {
 				snprintf(strbuf,strbuflen,"%s/fca_%03d.%s",imdir,imseq,imfmt);
-				printf("writing filtered image to %s\n",strbuf);
+				printf(", filtered image to %s",strbuf);
 				fflush(stdout);
 				ca_image_write_file(I,n,fca,ppc,imfmt,strbuf,0);
 			}
+			putchar('\n');
 			break;
 
 		case 'p': // calculate CA period
 
 			printf("calculating CA period... "); fflush(stdout);
 			mw_copy(nwords,wca,ca); // copy to working CA
-			mw_run(prff,n,wca,B,rts->rtab);
+			mw_run(prff,n,wca,B,rtl->rtab);
 			int prot;
-			const size_t period = ca_period(pmax,n,wca,B,rts->rtab,&prot);
+			const size_t period = ca_period(pmax,n,wca,B,rtl->rtab,&prot);
 			if (period == pmax) {
 				printf("> %zu iterations\n",pmax);
 			}
@@ -436,13 +513,13 @@ int sim_viz(int argc, char* argv[])
 
 			printf("calculating CA entropy");
 			for (int m=B; m<=emmax; ++m) {
-				H[m] = rt_entro(B,rts->rtab,m,eiff)/(double)m;
-				if (fts != NULL) Hf[m] = rt_entro(F,fts->rtab,m,eiff)/(double)m;
+				H[m] = rt_entro(B,rtl->rtab,m,eiff)/(double)m;
+				if (rtl->filt != NULL) Hf[m] = rt_entro(F,rtl->filt->rtab,m,eiff)/(double)m;
 				putchar('.'); fflush(stdout);
 			}
 			char gpename[] = "caentro";
 			gpd = gp_dopen(gpename,gpdir);
-			if (fts != NULL) {
+			if (rtl->filt != NULL) {
 				printf(" rule entropy = %8.6f, filter entropy = %8.6f\n",H[emmax],Hf[emmax]);
 				for (int m=B; m<hlen; ++m) fprintf(gpd,"%d\t%g\t%g\n",m,H[m],Hf[m]);
 			}
@@ -453,9 +530,9 @@ int sim_viz(int argc, char* argv[])
 			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
 			gpc = gp_fopen(gpename,gpdir,NULL);
 			fprintf(gpc,"datfile = \"%s.dat\"\n",gpename);
-			fprintf(gpc,"set title \"{/:Bold CA entropy}\\n\\nrule "); rt_fprint_id(B,rts->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(B,rts->rtab));
-			if (fts != NULL) {
-				fprintf(gpc,", filter "); rt_fprint_id(F,fts->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(F,fts->rtab));
+			fprintf(gpc,"set title \"{/:Bold CA entropy}\\n\\nrule "); rt_fprint_id(B,rtl->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(B,rtl->rtab));
+			if (rtl->filt != NULL) {
+				fprintf(gpc,", filter "); rt_fprint_id(F,rtl->filt->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(F,rtl->filt->rtab));
 			}
 			else {
 				fprintf(gpc,"\"\n");
@@ -467,7 +544,7 @@ int sim_viz(int argc, char* argv[])
 			fprintf(gpc,"set xr [%d:%d]\n",B,emmax);
 			fprintf(gpc,"set yr [0:1]\n");
 			fprintf(gpc,"set ytics 0.1\n");
-			if (fts != NULL) {
+			if (rtl->filt != NULL) {
 				fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy'\n");
 			}
 			else {
@@ -479,18 +556,18 @@ int sim_viz(int argc, char* argv[])
 
 		case 't': // calculate CA/filter 1-lag DD
 
-			if (fts == NULL) {
+			if (rtl->filt == NULL) {
 				printf("no filter!\n");
 				break;
 			}
 			printf("calculating CA/filter dynamical dependence");
 			for (int m=B; m<=emmax; ++m) {
-				H[m]  = rt_entro(B,rts->rtab,m,eiff)/(double)m;
-				Hf[m] = rt_entro(F,fts->rtab,m,eiff)/(double)m;
+				H[m]  = rt_entro(B,rtl->rtab,m,eiff)/(double)m;
+				Hf[m] = rt_entro(F,rtl->filt->rtab,m,eiff)/(double)m;
 				putchar('.'); fflush(stdout);
 			}
 			for (int m=B; m<=tmmax; ++m) {
-				Tf[m] = rt_trent1(B,rts->rtab,F,fts->rtab,m,tiff,tlag)/(double)m;
+				Tf[m] = rt_trent1(B,rtl->rtab,F,rtl->filt->rtab,m,tiff,tlag)/(double)m;
 				putchar('.'); fflush(stdout);
 			}
 			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
@@ -500,8 +577,8 @@ int sim_viz(int argc, char* argv[])
 			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
 			gpc = gp_fopen(gptname,gpdir,NULL);
 			fprintf(gpc,"datfile = \"%s.dat\"\n",gptname);
-			fprintf(gpc,"set title \"{/:Bold CA dynamical dependence}\\n\\nrule "); rt_fprint_id(B,rts->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(B,rts->rtab));
-			fprintf(gpc,", filter "); rt_fprint_id(F,fts->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(F,fts->rtab));
+			fprintf(gpc,"set title \"{/:Bold CA dynamical dependence}\\n\\nrule "); rt_fprint_id(B,rtl->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(B,rtl->rtab));
+			fprintf(gpc,", filter "); rt_fprint_id(F,rtl->filt->rtab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(F,rtl->filt->rtab));
 			fprintf(gpc,"set xlabel \"CA length (bits)\"\n");
 			fprintf(gpc,"set ylabel \"normalised entropy\"\n");
 			fprintf(gpc,"set key right bottom Left rev\n");
@@ -544,8 +621,7 @@ int sim_viz(int argc, char* argv[])
 
 	if (fclose(rtfs) == -1) PEEXIT("failed to close saved rtids file '%s'",rtfile);
 
-	rts_free(fts);
-	rts_free(rts);
+	rtl_free(rtl);
 
 	free(wca);
 	free(fca);
