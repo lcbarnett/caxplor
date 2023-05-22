@@ -25,6 +25,11 @@ void    rtl_free (rtl_t* curr);
 /*                      rule table                                   */
 /*********************************************************************/
 
+static inline void rt_copy(const int B, word_t* const rtdest, const word_t* const rtsrc)
+{
+	memcpy(rtdest,rtsrc,POW2(B)*sizeof(word_t));
+}
+
 static inline size_t rt_nsetbits(const int B, const word_t* const rtab)
 {
 	size_t b = 0;
@@ -56,9 +61,8 @@ word_t* rt_alloc       (const int B);
 
 void    rt_randomb     (const int B, word_t* const rtab, const size_t b, mt_t* const prng);
 void    rt_from_mwords (const int B, word_t* const rtab, const size_t nrtwords, const word_t* const rtwords);
-void    rt_from_rtid   (const int B, word_t* const rtab, const char* const rtid);
-void    rt_fread       (const int B, word_t* const rtab, FILE* stream);
-void    rt_read        (const int B, word_t* const rtab);
+int     rt_fread_id    (const int B, word_t* const rtab, FILE* const fstream);
+int     rt_read_id     (const int B, word_t* const rtab);
 
 size_t  rt_uwords      (const int B, const word_t* const rtab, const int m);
 void    rt_to_mwords   (const int B, const word_t* const rtab, const size_t nrtwords, word_t* const rtwords);
@@ -153,5 +157,7 @@ void ca_zpixmap_create(
 	const int           imy,
 	const int           foncol
 );
+
+static const unsigned char num2hex[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 #endif // WORD_H

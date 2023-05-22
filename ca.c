@@ -152,31 +152,15 @@ void rt_print(const int B, const word_t* const rtab)
 
 void rt_fprint_id(const int B, const word_t* const rtab, FILE* const fstream)
 {
-	const int bchunk = 32;
-	const int WB = WBITS-bchunk;
 	const size_t S = POW2(B);
-	const size_t n = (S/WBITS == 0 ? 1 : S/WBITS);
-	word_t w[n];
-	int i = 0, j = 0;
-	w[j] = WZERO;
+	word_t u = 0;
+	int i = 0;
 	for (size_t r=0;r<S;++r) {
-		PUTBIT(w[j],i,rtab[r]);
-		if (++i == WBITS) {i = 0; w[++j] = WZERO;}
-	}
-	int firstword = 1;
-	for (const word_t* u=w+n-1;u>=w;--u) {
-		if (firstword) {
-			if (B > 5) {
-				fprintf(fstream,"%"PRIw,(*u)>>WB);
-				for (int i=WBITS-bchunk;i!=0;i-=bchunk) fprintf(fstream,",%"PRIw,((*u)<<(WBITS-i))>>WB);
-			}
-			else {
-				for (int i=WBITS-bchunk;i!=0;i-=bchunk) fprintf(fstream,"%"PRIw,((*u)<<(WBITS-i))>>WB);
-			}
-			firstword = 0;
-		}
-		else {
-			for (int i=WBITS;i!=0;i-=bchunk) fprintf(fstream,",%"PRIw,((*u)<<(WBITS-i))>>WB);
+		PUTBIT(u,i,rtab[r]);
+		if ((++i)%4 == 0) {
+			fprintf(fstream,"%X",(unsigned)u);
+			u = 0;
+			i = 0;
 		}
 	}
 }
@@ -186,58 +170,38 @@ void rt_print_id(const int B, const word_t* const rtab)
 	rt_fprint_id(B,rtab,stdout);
 }
 
-void rt_from_rtid(const int B, word_t* const rtab, const char* const rtid)
+int rt_fread_id(const int B, word_t* const rtab, FILE* const fstream)
 {
-	ASSERT(rtid[0] != 0,"Oops, empty rule table id");
-	char rtstr[strlen(rtid)+1];
-	strcpy(rtstr,rtid);
-	size_t m = 1;
-	for (const char* c=rtstr;*c;++c) if (*c == ',') ++m;
-	word_t v[m];
-	{ // get chunks in lo->hi order
-		char echar;
-		char* pechar = &echar;
-		const char* o = rtstr;
-		size_t k = m;
-		for (char* c=rtstr;*c;++c) {
-			if (*c == ',') {
-				*c = 0; // NUL terminator
-				v[--k] = strtoul(o,&pechar,10);
-				ASSERT(!(*pechar),"Oops, bad rule table string");
-				o = c+1;
-			}
-		}
-		v[--k] = strtoul(o,&pechar,10);
-		ASSERT(!(*pechar),"Oops, bad rule table string");
-	};
-	const int bchunk = 32;
-	const size_t S = POW2(B);
-	memset(rtab,0,S*sizeof(word_t));
-	word_t loword = WZERO;
-	size_t r = 0;
-	size_t k;
-	for (k=0;k<m;++k) {
-		for (int i=0;(i<bchunk)&&(r<S);++i,++r) rtab[r] = BITON(v[k],i);
-		if (k < WBITS/bchunk) loword |= (v[k]<<((int)k*bchunk)); // lo word
-	}
-	ASSERT(k == m,"Oops, too many words (wrong breadth?)");
-	if (B<=5) ASSERT(loword < POW2(S),"Oops, word too big (wrong breadth?)\n");
-}
+	const size_t C = (B > 2 ? POW2(B-2) : 1);
 
-void rt_fread(const int B, word_t* const rtab, FILE* stream)
-{
-	char* irtid = NULL;
+	char* xstr = NULL;
 	size_t len = 0;
-	const ssize_t ilen = getline(&irtid,&len,stream);
+	const ssize_t ilen = getline(&xstr,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
-	irtid[ilen-1] = '\0'; // strip trailing newline
-	rt_from_rtid(B,rtab,irtid);
-	free(irtid);
+	if ((size_t)ilen != C+1) { // failure - wrong number of chars
+fprintf(stderr,"ilen = %zu, C+1 = %zu\n",(size_t)ilen,C+1);
+		free(xstr);
+		return 1;
+	}
+
+	size_t r = 0;
+	for (size_t c=0;c<C;++c) {
+		const char x = xstr[c];
+		const word_t u = (word_t)((x >= '0') & (x <= '9') ? x-48 : (x >= 'A') & (x <= 'F') ? x-55 : 999);
+		if (u == 999) { // failure - bad char chars
+			free(xstr);
+			return 2;
+		}
+		for (int i=0;i<4;++i) rtab[r++] = GETBIT(u,i);
+	}
+
+	free(xstr);
+	return 0; // success
 }
 
-void rt_read(const int B, word_t* const rtab)
+int rt_read_id(const int B, word_t* const rtab)
 {
-	rt_fread(B,rtab,stdin);
+	return rt_fread_id(B,rtab,stdin);
 }
 
 void rt_entro_hist(const int B, const word_t* const rtab, const int m, const int iff, ulong* const bin)

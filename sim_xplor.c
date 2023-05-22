@@ -117,8 +117,6 @@ int sim_xplor(int argc, char* argv[])
 
 	// control variables
 	int filtering = 0; // xplorer mode
-	int srtid = 0; // CA rule already saved
-	int sftid = 0; // filter rule already saved
 	int quit  = 0; // time to go
 	int imseq = 0; // image sequence number
 
@@ -254,15 +252,28 @@ int sim_xplor(int argc, char* argv[])
 				rtl_add(rtl->filt,F);
 				printf("enter filter id : ");
 				fflush(stdout);
-				rt_fread(F,rtl->filt->rtab,stdin);
+				rt_read_id(F,rtl->filt->rtab);
 				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 			}
 			else {
-				rtl = rtl_add(rtl,B);
 				printf("enter CA id : "); // prompt for rtid
 				fflush(stdout);
-				rt_fread(B,rtl->rtab,stdin);
+				word_t* const rtab = rt_alloc(B);
+				const int res = rt_read_id(B,rtab);
+				fflush(stdin);
+				printf("exploring : ");
+				fflush(stdout);
+				if (res == 1) {
+					printf("input is wrong length\n");
+					break;
+				}
+				if (res == 2) {
+					printf("input contains non-hex characters\n");
+					break;
+				}
+				rtl = rtl_add(rtl,B);
+				rt_copy(B,rtl->rtab,rtab);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,B,rtl->rtab);
 				if (untwist) {
@@ -280,7 +291,6 @@ int sim_xplor(int argc, char* argv[])
 			if (filtering) {
 				if (rtl->filt == NULL) {
 					printf("no filter to delete!\n");
-					fflush(stdout);
 					break;
 				}
 				printf("deleting filter : ");
@@ -296,7 +306,6 @@ int sim_xplor(int argc, char* argv[])
 			else {
 				if (rtl->prev == NULL && rtl->next == NULL) {
 					printf("last CA rule - won't delete!\n");
-					fflush(stdout);
 					break;
 				}
 				printf("deleting CA : ");
@@ -328,7 +337,6 @@ int sim_xplor(int argc, char* argv[])
 				rtl->filt = rtl->filt->prev;
 				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
-				sftid = 0;
 			}
 			else {
 				if (rtl->prev == NULL) {
@@ -453,29 +461,19 @@ int sim_xplor(int argc, char* argv[])
 
 		case 's': // save CA/filter rule id to file
 
-			if (srtid) {
-				printf("CA rule id already saved\n");
+			printf("saving CA \n");
+			fprintf(rtfs,"B =%2d, id = ",B);
+			rt_fprint_id(B,rtl->rtab,rtfs);
+			fputc('\n',rtfs);
+			if (rtl->filt != NULL) {
+				printf("and filter rule ids\n");
+				fflush(stdout);
+				fprintf(rtfs,"\tF =%2d, id = ",F);
+				rt_fprint_id(F,rtl->filt->rtab,rtfs);
+				fputc('\n',rtfs);
 			}
 			else {
-				printf("saving CA rule id\n");
-				fprintf(rtfs,"B =%2d, id = ",B);
-				rt_fprint_id(B,rtl->rtab,rtfs);
-				fputc('\n',rtfs);
-				srtid = 1;
-			}
-			if (rtl->filt != NULL) {
-				if (sftid) {
-					printf("filter rule id already saved\n");
-					fflush(stdout);
-				}
-				else {
-					printf("saving filter rule id\n");
-					fflush(stdout);
-					fprintf(rtfs,"\tF =%2d, id = ",F);
-					rt_fprint_id(F,rtl->filt->rtab,rtfs);
-					fputc('\n',rtfs);
-					sftid = 1;
-				}
+				printf("rule id\n");
 			}
 			break;
 
