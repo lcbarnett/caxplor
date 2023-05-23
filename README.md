@@ -19,7 +19,7 @@ Simulation parameters may be set using command-line switches; e.g.,
 ```
 will run CAs of order 7, filters of order 3 and an average CA &lambda; equal to 0.2.
 
-There are a currently a couple of (probably incomplete/undocumented) routines for analysis and benchmarking, as well as a template for test routines, which may be run as `./caxplor ana`, `.caxplor bmark` and `.caxplor bmark` respectively; you may edit these to taste.
+There are a currently a couple of (probably buggy/undocumented) routines for analysis and benchmarking, as well as a template for test routines, which may be run as `./caxplor ana`, `.caxplor bmark` and `.caxplor bmark` respectively; you may edit these to taste.
 
 Have fun!
 
