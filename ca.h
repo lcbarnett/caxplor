@@ -158,6 +158,6 @@ void ca_zpixmap_create(
 	const int           foncol
 );
 
-static const unsigned char num2hex[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+static const unsigned char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 #endif // WORD_H

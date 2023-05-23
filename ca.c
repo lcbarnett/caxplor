@@ -158,7 +158,7 @@ void rt_fprint_id(const int B, const word_t* const rtab, FILE* const fstream)
 	for (size_t r=0;r<S;++r) {
 		PUTBIT(u,i,rtab[r]);
 		if ((++i)%4 == 0) {
-			fprintf(fstream,"%X",(unsigned)u);
+			fputc(hexchar[u],fstream);
 			u = 0;
 			i = 0;
 		}
@@ -179,22 +179,19 @@ int rt_fread_id(const int B, word_t* const rtab, FILE* const fstream)
 	const ssize_t ilen = getline(&xstr,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
 	if ((size_t)ilen != C+1) { // failure - wrong number of chars
-fprintf(stderr,"ilen = %zu, C+1 = %zu\n",(size_t)ilen,C+1);
 		free(xstr);
 		return 1;
 	}
-
 	size_t r = 0;
 	for (size_t c=0;c<C;++c) {
 		const char x = xstr[c];
-		const word_t u = (word_t)((x >= '0') & (x <= '9') ? x-48 : (x >= 'A') & (x <= 'F') ? x-55 : 999);
-		if (u == 999) { // failure - bad char chars
+		const word_t u = (word_t)((x >= '0') & (x <= '9') ? x-48 : (x >= 'A') & (x <= 'F') ? x-55 : 0);
+		if (u == 0) { // failure - non-hex chars
 			free(xstr);
 			return 2;
 		}
-		for (int i=0;i<4;++i) rtab[r++] = GETBIT(u,i);
+		for (int i=0;i<4;++i) rtab[r++] = BITON(u,i);
 	}
-
 	free(xstr);
 	return 0; // success
 }
