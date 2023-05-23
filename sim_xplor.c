@@ -35,6 +35,7 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(fseed,   ulong,   0,            "filter rule random seed (0 for unpredictable)");
 	CLAP_CARG(iseed,   ulong,   0,            "initialisation random seed (0 for unpredictable)");
 	CLAP_CARG(untwist, int,     1,            "untwist?");
+	CLAP_CARG(rtfile,  cstr,   "saved.rt",    "saved rtids file name");
 	CLAP_CARG(utoff,   int,     0,            "untwist offset (or 0 for half-B)");
 	CLAP_CARG(prff,    size_t,  1000000,      "period fast-forwrd");
 	CLAP_CARG(pmax,    size_t,  100000,       "maximum period");
@@ -74,7 +75,6 @@ int sim_xplor(int argc, char* argv[])
 	mt_seed(&frng,fseed);
 
 	// saved CA rules file
-	char rtfile[] = "saved.rt";
 	FILE* const rtfs = fopen(rtfile,"a");
 	if (rtfs == NULL) PEEXIT("failed to open saved rtids file '%s'",rtfile);
 
@@ -444,12 +444,12 @@ int sim_xplor(int argc, char* argv[])
 		case 's': // save CA/filter rule id to file
 
 			printf("saving CA ");
-			fprintf(rtfs,"B =%2d, id = ",B);
+			fprintf(rtfs,"B = %d id = ",B);
 			rt_fprint_id(B,rtl->rtab,rtfs);
 			if (rtl->filt != NULL) {
 				printf("and filter rule ids\n");
 				fflush(stdout);
-				fprintf(rtfs," : F =%2d, id = ",F);
+				fprintf(rtfs," F = %d, id = ",F);
 				rt_fprint_id(F,rtl->filt->rtab,rtfs);
 			}
 			else {
