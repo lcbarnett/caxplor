@@ -165,11 +165,7 @@ int sim_xplor(int argc, char* argv[])
 	printf("exploring : random CA : id = "); rt_print_id(B,rtl->rtab);
 	printf(", lambda = %6.4f\n",rt_lambda(B,rtl->rtab));
 	mw_randomise(n,ca,&irng);
-	ca_run(I,n,ca,B,rtl->rtab);
-	if (untwist) {
-		mw_copy(nwords,wca,ca);
-		ca_rotl(I,n,ca,wca,uto);
-	}
+	ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 	ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 	printf("%s : ",modestr);
 	fflush(stdout);
@@ -225,22 +221,18 @@ int sim_xplor(int argc, char* argv[])
 		case 'n': // new random CA/filter
 
 			if (filtering) {
-				printf("new random filter : ");
+				printf("random filter : ");
 				rtl->filt = rtl_add(rtl->filt,F);
 				rt_randomise(F,rtl->filt->rtab,flam,&frng);
 				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 			}
 			else {
-				printf("new random CA : ");
+				printf("random CA : ");
 				rtl = rtl_add(rtl,B);
 				rt_randomise(B,rtl->rtab,rlam,&rrng);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 			}
 			print_id(B,rtl,F,filtering);
@@ -293,11 +285,7 @@ int sim_xplor(int argc, char* argv[])
 				rt_copy(B,rtl->rtab,rtab);
 				free(rtab);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 			}
 			print_id(B,rtl,F,filtering);
@@ -329,11 +317,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("deleting CA : ");
 				rtl = rtl_del(rtl);
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 			}
 			print_id(B,rtl,F,filtering);
@@ -364,11 +348,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("previous CA : ");
 				rtl = rtl->prev;
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 			}
 			print_id(B,rtl,F,filtering);
@@ -399,11 +379,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("next CA : ");
 				rtl = rtl->next;
 				mw_randomise(n,ca,&irng);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 			}
 			print_id(B,rtl,F,filtering);
@@ -426,11 +402,7 @@ int sim_xplor(int argc, char* argv[])
 			else {
 				printf("inverting CA : ");
 				rt_invert(B,rtl->rtab);
-				ca_run(I,n,ca,B,rtl->rtab);
-				if (untwist) {
-					mw_copy(nwords,wca,ca);
-					ca_rotl(I,n,ca,wca,uto);
-				}
+				ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 				rlam = 1.0-rlam;
 			}
@@ -443,11 +415,7 @@ int sim_xplor(int argc, char* argv[])
 			printf("fast-forward CA\n");
 			fflush(stdout);
 			mw_copy(n,ca,ca+(I-1)*n);
-			ca_run(I,n,ca,B,rtl->rtab);
-			if (untwist) {
-				mw_copy(nwords,wca,ca);
-				ca_rotl(I,n,ca,wca,uto);
-			}
+			ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 			if (rtl->filt != NULL) {
 				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
@@ -462,11 +430,7 @@ int sim_xplor(int argc, char* argv[])
 
 			printf("re-initialise CA\n");
 			mw_randomise(n,ca,&irng);
-			ca_run(I,n,ca,B,rtl->rtab);
-			if (untwist) {
-				mw_copy(nwords,wca,ca);
-				ca_rotl(I,n,ca,wca,uto);
-			}
+			ca_run(I,n,ca,wca,B,rtl->rtab,uto);
 			if (rtl->filt != NULL) {
 				ca_filter(I,n,fca,ca,F,rtl->filt->rtab);
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);

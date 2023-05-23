@@ -47,6 +47,11 @@ static inline size_t rt_nwords(const int B)
 	return B > 6 ? POW2(B-6) : 1;
 }
 
+static inline size_t rt_hexchars(const int B)
+{
+	return B > 2 ? POW2(B-2) : 1;
+}
+
 static inline void rt_randomise(const int B, word_t* const rtab, const double lam, mt_t* const prng)
 {
 	for (size_t r=0;r<POW2(B);++r) rtab[r] = (mt_rand(prng) < lam ? WONE : WZERO);
@@ -91,7 +96,7 @@ void    ca_rotr        (const size_t I, const size_t n, word_t* const ca, const 
 void    ca_reverse     (const size_t I, const size_t n, word_t* const ca, const word_t* const caold);
 void    ca_filter      (const size_t I, const size_t n, word_t* const ca, const word_t* const caold, const int B, const word_t* const rtab);
 
-void    ca_run         (const size_t I, const size_t n, word_t* const ca, const int B, const word_t* const rtab);
+void    ca_run         (const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto);
 
 /*********************************************************************/
 /*                      bitmap stuff                                 */

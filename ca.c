@@ -172,8 +172,7 @@ void rt_print_id(const int B, const word_t* const rtab)
 
 int rt_fread_id(const int B, word_t* const rtab, FILE* const fstream)
 {
-	const size_t C = (B > 2 ? POW2(B-2) : 1);
-
+	const size_t C = rt_hexchars(B);
 	char* xstr = NULL;
 	size_t len = 0;
 	const ssize_t ilen = getline(&xstr,&len,fstream);
@@ -298,9 +297,14 @@ void ca_prints(const size_t I, const size_t n, const word_t* const ca)
 	ca_fprints(I,n,ca,stdout);
 }
 
-void ca_run(const size_t I, const size_t n, word_t* const ca, const int B, const word_t* const rtab)
+void ca_run(const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto)
 {
 	for (word_t* w=ca+n;w<ca+I*n;w+=n) mw_filter(n,w,w-n,B,rtab);
+	if (uto) {
+		ASSERT(cawrk != NULL,"Need CA work buffer to unwrap!");
+		mw_copy(I*n,cawrk,ca);
+		ca_rotl(I,n,ca,cawrk,uto);
+	}
 }
 
 void ca_filter(const size_t I, const size_t n, word_t* const ca, const word_t* const caold, const int B, const word_t* const rtab)
