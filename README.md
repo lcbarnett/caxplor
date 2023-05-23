@@ -11,7 +11,7 @@ To run the main 'CA explorer' routine with default parameters, type
 ```
 ./caxplor
 ```
-This will display a random 5th-order 1D CA in full(ish) screen, and display a list of available parameters and a list of key commands - to be typed in the CA window, not the terminal! 'f' pages the CA one screen forward, and 'i' re-initialises the CA. The routine maintains a list of CA rules, and for each CA rule, a list of filter rules. There are two operational/display modes: 'exploring' and 'filtering'. In filtering mode, the CA screen displays in dark blue, and operations apply to filters on the current CA. Diagnostic information appears on the terminal, in particular the current CA/filter ID (as a hex string representation of the rule table) and Langton's &lambda;-parameter. New random CAs/filters are added to the corresponding list with 'n'; 'N' prompts at the terminal for user-supplied CA/filter IDs. You may scroll through the CA/filter lists with the left- and right-arrow (or 'j', 'k') keys, and the current CA/filter may be deleted with the DEL (or 'd') key. The current CA/filter rule ID(s) may be saved by pressing 's', by default in a text file called 'saved.rt'. Screen images may be written to file (by default in PNG format) with the 'w' key. Press 'h' to redisplay the key command help.
+This will display a random 5th-order 1D CA in full(ish) screen, and display a list of available parameters and a list of key commands - to be typed in the CA window, not the terminal! 'f' pages the CA one screen forward, and 'i' re-initialises the CA. The routine maintains a list of CA rules, and for each CA rule, a list of filter rules. There are two operational/display modes: 'exploring' and 'filtering'. In filtering mode, the CA screen displays in dark blue, and operations apply to filters on the current CA. Diagnostic information appears on the terminal, in particular the current CA/filter ID (as a hex string representation of the rule table) and Langton's &lambda;-parameter. New random CAs/filters are added to the corresponding list with 'n'; 'N' prompts at the terminal for a user-supplied CA/filter ID. You may scroll through the CA/filter lists with the left- and right-arrow (or 'j', 'k') keys, and the current CA/filter may be deleted with the DEL (or 'd') key. The current CA/filter rule ID(s) may be saved by pressing 's', by default in a text file called 'saved.rt'. Screen images may be written to file (by default in PNG format) with the 'w' key. Press 'h' to redisplay the key command help.
 
 Simulation parameters may be set using command-line switches; e.g.,
 ```
@@ -25,4 +25,5 @@ Have fun!
 
 ### Author
 Lionel Barnett: lionelb@sussex.ac.uk
+
 [^1]: Do let the author know (or fork and contribute) if you have any joy porting to other platforms.
