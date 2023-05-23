@@ -139,22 +139,22 @@ int sim_xplor(int argc, char* argv[])
 	char usagestr[] =
 		"Keys:\n"
 		"-----\n\n"
-		"h  : display this help\n"
-		"m  : toggle CA/filter mode\n"
-		"n  : new random CA/filter\n"
-		"N  : new CA/filter from user-supplied id\n"
-		"d  : (or DEL) delete CA/filter\n"
-		"-> : next CA/filter\n"
-		"<- : previous CA/filter\n"
-		"v  : invert CA/filter\n"
-		"f  : forward CA one screen\n"
-		"i  : re-initialise CA\n"
-		"e  : plot entropy of CA rule\n"
-		"t  : plot 1-lag DD of CA rule and filter rule\n"
-		"p  : calculate CA period\n"
-		"s  : save CA/filter id to file\n"
-		"w  : write CA image to file\n"
-		"q  : (or ESC) exit program\n";
+		"h : display this help\n"
+		"m : toggle CA/filter mode\n"
+		"n : new random CA/filter\n"
+		"N : new CA/filter from user-supplied id\n"
+		"d : (or DEL) delete CA/filter\n"
+		"j : (or left-arrow) previous CA/filter\n"
+		"k : (or right-arrow) next CA/filter\n"
+		"v : invert CA/filter\n"
+		"f : forward CA one screen\n"
+		"i : re-initialise CA\n"
+		"e : plot entropy of CA rule\n"
+		"t : plot 1-lag DD of CA rule and filter rule\n"
+		"p : calculate CA period\n"
+		"s : save CA/filter id to file\n"
+		"w : write CA image to file\n"
+		"q : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
 
@@ -197,10 +197,11 @@ int sim_xplor(int argc, char* argv[])
 		KeySym keysym;
 		int kret = XLookupString(&event.xkey,&key,1,&keysym,NULL);
 		if (key == 27) key = 'q'; // map ESC to 'q' for quit
-		if (keysym == 65361) {key = 37;  kret = 1;} // map to left-arrow
-		if (keysym == 65363) {key = 39;  kret = 1;} // map to right-arrow
-		if (keysym == 65535) {key = 'd'; kret = 1;} // map to delete
-// fprintf(stderr,"key = %c, keysym = %lu\n",key,keysym);
+		switch (keysym) {
+			case 65361: key = 'j'; kret = 1; break; // map left-arrow  to 'j' for prev
+			case 65363: key = 'k'; kret = 1; break; // map right-arrow to 'k' for next
+			case 65535: key = 'd'; kret = 1; break; // map DEL to 'd' for delete
+		}
 		if (kret != 1) continue;
 
 		switch (key) {
@@ -339,7 +340,7 @@ int sim_xplor(int argc, char* argv[])
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
-		case 37: // back to previous CA or filter in list
+		case 'j': // back to previous CA or filter in list
 
 			if (filtering) {
 				if (rtl->filt == NULL) {
@@ -374,7 +375,7 @@ int sim_xplor(int argc, char* argv[])
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
-		case 39: // forward to next CA or filter in list
+		case 'k': // forward to next CA or filter in list
 
 			if (filtering) {
 				if (rtl->filt == NULL) {
@@ -478,20 +479,19 @@ int sim_xplor(int argc, char* argv[])
 
 		case 's': // save CA/filter rule id to file
 
-			printf("saving CA \n");
+			printf("saving CA ");
 			fprintf(rtfs,"B =%2d, id = ",B);
 			rt_fprint_id(B,rtl->rtab,rtfs);
-			fputc('\n',rtfs);
 			if (rtl->filt != NULL) {
 				printf("and filter rule ids\n");
 				fflush(stdout);
-				fprintf(rtfs,"\tF =%2d, id = ",F);
+				fprintf(rtfs," : F =%2d, id = ",F);
 				rt_fprint_id(F,rtl->filt->rtab,rtfs);
-				fputc('\n',rtfs);
 			}
 			else {
 				printf("rule id\n");
 			}
+				fputc('\n',rtfs);
 			break;
 
 		case 'w': // write CA/filtered CA image to file
