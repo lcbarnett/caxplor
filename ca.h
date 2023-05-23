@@ -7,21 +7,28 @@
 #include "word.h"
 
 /*********************************************************************/
-/*                      rule table stack                             */
+/*              rule table (double-linked) list                      */
 /*********************************************************************/
 
-typedef struct rts_node {
+typedef struct rtl_node {
 	word_t*          rtab;
-	struct rts_node* prev;
-} rts_t;
+	struct rtl_node* prev;
+	struct rtl_node* next;
+	struct rtl_node* filt; // pointer to filter list
+} rtl_t;
 
-rts_t*  rts_push       (rts_t* top, const int B);
-rts_t*  rts_pop        (rts_t* top);
-rts_t*  rts_free       (rts_t* top);
+rtl_t*  rtl_add  (rtl_t* curr, const int B); // insert after
+rtl_t*  rtl_del  (rtl_t* curr);
+void    rtl_free (rtl_t* curr);
 
 /*********************************************************************/
 /*                      rule table                                   */
 /*********************************************************************/
+
+static inline void rt_copy(const int B, word_t* const rtdest, const word_t* const rtsrc)
+{
+	memcpy(rtdest,rtsrc,POW2(B)*sizeof(word_t));
+}
 
 static inline size_t rt_nsetbits(const int B, const word_t* const rtab)
 {
@@ -37,8 +44,12 @@ static inline double rt_lambda(const int B, const word_t* const rtab) // Langton
 
 static inline size_t rt_nwords(const int B)
 {
-	const size_t N = POW2(B)/WBITS;
-	return (N == 0 ? 1 : N);
+	return B > 6 ? POW2(B-6) : 1;
+}
+
+static inline size_t rt_hexchars(const int B)
+{
+	return B > 2 ? POW2(B-2) : 1;
 }
 
 static inline void rt_randomise(const int B, word_t* const rtab, const double lam, mt_t* const prng)
@@ -55,9 +66,8 @@ word_t* rt_alloc       (const int B);
 
 void    rt_randomb     (const int B, word_t* const rtab, const size_t b, mt_t* const prng);
 void    rt_from_mwords (const int B, word_t* const rtab, const size_t nrtwords, const word_t* const rtwords);
-void    rt_from_rtid   (const int B, word_t* const rtab, const char* const rtid);
-void    rt_fread       (const int B, word_t* const rtab, FILE* stream);
-void    rt_read        (const int B, word_t* const rtab);
+int     rt_fread_id    (const int B, word_t* const rtab, FILE* const fstream);
+int     rt_read_id     (const int B, word_t* const rtab);
 
 size_t  rt_uwords      (const int B, const word_t* const rtab, const int m);
 void    rt_to_mwords   (const int B, const word_t* const rtab, const size_t nrtwords, word_t* const rtwords);
@@ -86,7 +96,7 @@ void    ca_rotr        (const size_t I, const size_t n, word_t* const ca, const 
 void    ca_reverse     (const size_t I, const size_t n, word_t* const ca, const word_t* const caold);
 void    ca_filter      (const size_t I, const size_t n, word_t* const ca, const word_t* const caold, const int B, const word_t* const rtab);
 
-void    ca_run         (const size_t I, const size_t n, word_t* const ca, const int B, const word_t* const rtab);
+void    ca_run         (const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto);
 
 /*********************************************************************/
 /*                      bitmap stuff                                 */
@@ -152,5 +162,7 @@ void ca_zpixmap_create(
 	const int           imy,
 	const int           foncol
 );
+
+static const unsigned char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 #endif // WORD_H

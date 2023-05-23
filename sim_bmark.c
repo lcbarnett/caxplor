@@ -62,7 +62,7 @@ int sim_bmark(int argc, char* argv[])
 	// run CAs
 
 	ts = (double)clock()/(double)CLOCKS_PER_SEC;
-	for (size_t k=0; k<S; ++k) ca_run(I,n,ca[k],R,rtab);
+	for (size_t k=0; k<S; ++k) ca_run(I,n,ca[k],NULL,R,rtab,0);
 	te = (double)clock()/(double)CLOCKS_PER_SEC;
 	printf("CA run    time = %8.6f\n",te-ts);
 

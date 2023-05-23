@@ -2,33 +2,63 @@
 #include "utils.h"
 
 /*********************************************************************/
-/*                      rule table stack                             */
+/*              rule table (double-linked) list                         */
 /*********************************************************************/
 
-rts_t* rts_push(rts_t* top, const int B)
+rtl_t* rtl_add(rtl_t* curr, const int B) // insert after
 {
-	rts_t* const oldtop = top;
-	top = malloc(sizeof(rts_t));
-	PASSERT(top != NULL,"memory allocation failed");
-	top->prev = oldtop;
-	top->rtab = rt_alloc(B);
-	return top;
+	if (curr == NULL) { // empty list
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = NULL;
+		curr->prev = NULL;
+	}
+	else {
+		rtl_t* const newprev = curr;
+		rtl_t* const newnext = curr->next;
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = newnext;
+		curr->prev = newprev;
+		newprev->next = curr;
+		if (newnext != NULL) newnext->prev = curr; // not at end of list
+	}
+	curr->filt = NULL;
+	curr->rtab = rt_alloc(B);
+	return curr;
 }
 
-rts_t* rts_pop(rts_t* top)
+rtl_t* rtl_del(rtl_t* curr)
 {
-	PASSERT(top != NULL,"pop too much");
-	rts_t* const oldtop = top;
-	top = oldtop->prev;
-	free(oldtop->rtab);
-	free(oldtop);
-	return top;
+	if (curr == NULL) return NULL; // nothing to delete
+	rtl_t* const oldcurr = curr;
+	if (oldcurr->next == NULL) { // end of list
+		if (oldcurr->prev == NULL) { // only 1 item in list!
+			curr = NULL;
+		}
+		else {
+			curr = oldcurr->prev;
+			curr->next = NULL;
+		}
+	}
+	else {
+		curr = oldcurr->next;
+		if (oldcurr->prev == NULL) { // beginning of list
+			curr->prev = NULL;
+		}
+		else {
+			curr->prev = oldcurr->prev;
+			oldcurr->prev->next = curr;
+		}
+	}
+	free(oldcurr->rtab);
+	rtl_free(oldcurr->filt);
+	return curr;
 }
 
-rts_t* rts_free(rts_t* top)
+void rtl_free(rtl_t* curr)
 {
-	while (top != NULL) top = rts_pop(top);
-	return NULL;
+	while (curr != NULL) curr = rtl_del(curr);
 }
 
 /*********************************************************************/
@@ -122,31 +152,15 @@ void rt_print(const int B, const word_t* const rtab)
 
 void rt_fprint_id(const int B, const word_t* const rtab, FILE* const fstream)
 {
-	const int bchunk = 32;
-	const int WB = WBITS-bchunk;
 	const size_t S = POW2(B);
-	const size_t n = (S/WBITS == 0 ? 1 : S/WBITS);
-	word_t w[n];
-	int i = 0, j = 0;
-	w[j] = WZERO;
+	word_t u = 0;
+	int i = 0;
 	for (size_t r=0;r<S;++r) {
-		PUTBIT(w[j],i,rtab[r]);
-		if (++i == WBITS) {i = 0; w[++j] = WZERO;}
-	}
-	int firstword = 1;
-	for (const word_t* u=w+n-1;u>=w;--u) {
-		if (firstword) {
-			if (B > 5) {
-				fprintf(fstream,"%"PRIw,(*u)>>WB);
-				for (int i=WBITS-bchunk;i!=0;i-=bchunk) fprintf(fstream,",%"PRIw,((*u)<<(WBITS-i))>>WB);
-			}
-			else {
-				for (int i=WBITS-bchunk;i!=0;i-=bchunk) fprintf(fstream,"%"PRIw,((*u)<<(WBITS-i))>>WB);
-			}
-			firstword = 0;
-		}
-		else {
-			for (int i=WBITS;i!=0;i-=bchunk) fprintf(fstream,",%"PRIw,((*u)<<(WBITS-i))>>WB);
+		PUTBIT(u,i,rtab[r]);
+		if ((++i)%4 == 0) {
+			fputc(hexchar[u],fstream);
+			u = 0;
+			i = 0;
 		}
 	}
 }
@@ -156,58 +170,34 @@ void rt_print_id(const int B, const word_t* const rtab)
 	rt_fprint_id(B,rtab,stdout);
 }
 
-void rt_from_rtid(const int B, word_t* const rtab, const char* const rtid)
+int rt_fread_id(const int B, word_t* const rtab, FILE* const fstream)
 {
-	ASSERT(rtid[0] != 0,"Oops, empty rule table id");
-	char rtstr[strlen(rtid)+1];
-	strcpy(rtstr,rtid);
-	size_t m = 1;
-	for (const char* c=rtstr;*c;++c) if (*c == ',') ++m;
-	word_t v[m];
-	{ // get chunks in lo->hi order
-		char echar;
-		char* pechar = &echar;
-		const char* o = rtstr;
-		size_t k = m;
-		for (char* c=rtstr;*c;++c) {
-			if (*c == ',') {
-				*c = 0; // NUL terminator
-				v[--k] = strtoul(o,&pechar,10);
-				ASSERT(!(*pechar),"Oops, bad rule table string");
-				o = c+1;
-			}
-		}
-		v[--k] = strtoul(o,&pechar,10);
-		ASSERT(!(*pechar),"Oops, bad rule table string");
-	};
-	const int bchunk = 32;
-	const size_t S = POW2(B);
-	memset(rtab,0,S*sizeof(word_t));
-	word_t loword = WZERO;
-	size_t r = 0;
-	size_t k;
-	for (k=0;k<m;++k) {
-		for (int i=0;(i<bchunk)&&(r<S);++i,++r) rtab[r] = BITON(v[k],i);
-		if (k < WBITS/bchunk) loword |= (v[k]<<((int)k*bchunk)); // lo word
-	}
-	ASSERT(k == m,"Oops, too many words (wrong breadth?)");
-	if (B<=5) ASSERT(loword < POW2(S),"Oops, word too big (wrong breadth?)\n");
-}
-
-void rt_fread(const int B, word_t* const rtab, FILE* stream)
-{
-	char* irtid = NULL;
+	const size_t C = rt_hexchars(B);
+	char* xstr = NULL;
 	size_t len = 0;
-	const ssize_t ilen = getline(&irtid,&len,stream);
+	const ssize_t ilen = getline(&xstr,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
-	irtid[ilen-1] = '\0'; // strip trailing newline
-	rt_from_rtid(B,rtab,irtid);
-	free(irtid);
+	if ((size_t)ilen != C+1) { // failure - wrong number of chars
+		free(xstr);
+		return 1;
+	}
+	size_t r = 0;
+	for (size_t c=0;c<C;++c) {
+		const char x = xstr[c];
+		const word_t u = (word_t)((x >= '0') & (x <= '9') ? x-48 : (x >= 'A') & (x <= 'F') ? x-55 : 0);
+		if (u == 0) { // failure - non-hex chars
+			free(xstr);
+			return 2;
+		}
+		for (int i=0;i<4;++i) rtab[r++] = BITON(u,i);
+	}
+	free(xstr);
+	return 0; // success
 }
 
-void rt_read(const int B, word_t* const rtab)
+int rt_read_id(const int B, word_t* const rtab)
 {
-	rt_fread(B,rtab,stdin);
+	return rt_fread_id(B,rtab,stdin);
 }
 
 void rt_entro_hist(const int B, const word_t* const rtab, const int m, const int iff, ulong* const bin)
@@ -307,9 +297,14 @@ void ca_prints(const size_t I, const size_t n, const word_t* const ca)
 	ca_fprints(I,n,ca,stdout);
 }
 
-void ca_run(const size_t I, const size_t n, word_t* const ca, const int B, const word_t* const rtab)
+void ca_run(const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto)
 {
 	for (word_t* w=ca+n;w<ca+I*n;w+=n) mw_filter(n,w,w-n,B,rtab);
+	if (uto) {
+		ASSERT(cawrk != NULL,"Need CA work buffer to unwrap!");
+		mw_copy(I*n,cawrk,ca);
+		ca_rotl(I,n,ca,cawrk,uto);
+	}
 }
 
 void ca_filter(const size_t I, const size_t n, word_t* const ca, const word_t* const caold, const int B, const word_t* const rtab)
