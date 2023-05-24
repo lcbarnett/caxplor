@@ -1,6 +1,7 @@
 #include <time.h>
 
 #include "ca.h"
+#include "rtab.h"
 #include "clap.h"
 
 int sim_bmark(int argc, char* argv[])

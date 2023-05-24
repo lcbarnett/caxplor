@@ -3,6 +3,7 @@
 
 #include "screen_metrics.h"
 #include "ca.h"
+#include "rtab.h"
 #include "clap.h"
 #include "strman.h"
 
@@ -54,7 +55,7 @@ int sim_xplor(int argc, char* argv[])
 	puts("---------------------------------------------------------------------------------------\n");
 
 	const size_t strbuflen = 100;
-	char strbuf[strbuflen];
+	char strbuf[strbuflen+1];
 
 	// get number of CA rows/cols/words to fit screen
 
