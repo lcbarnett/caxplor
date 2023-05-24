@@ -21,6 +21,7 @@ typedef struct rtl_node {
 rtl_t*  rtl_add  (rtl_t* curr, const int size); // insert after
 rtl_t*  rtl_del  (rtl_t* curr);
 void    rtl_free (rtl_t* curr);
+rtl_t*  rtl_find (const rtl_t* rule, const int size, const word_t* const tab);
 
 /*********************************************************************/
 /*                      rule table                                   */
@@ -69,7 +70,7 @@ void    rt_randomb     (const int size, word_t* const tab, const size_t b, mt_t*
 void    rt_from_mwords (const int size, word_t* const tab, const size_t nrtwords, const word_t* const rtwords);
 int     rt_fread_id    (const int size, word_t* const tab, FILE* const fstream);
 int     rt_read_id     (const int size, word_t* const tab);
-int    rt_sread_id     (const int size, word_t* const tab, const char* const str);
+int     rt_sread_id    (const int size, word_t* const tab, const char* const str);
 
 size_t  rt_uwords      (const int size, const word_t* const tab, const int m);
 void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nrtwords, word_t* const rtwords);
@@ -87,7 +88,7 @@ static const char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','
 
 static inline word_t hex2word(const char c)
 {
-	return (word_t)((c >= '0') & (c <= '9') ? c-48 : (c >= 'A') & (c <= 'F') ? c-55 : 0);
+	return (word_t)((c >= '0') & (c <= '9') ? c-48 : (c >= 'A') & (c <= 'F') ? c-55 : 999);
 }
 
 

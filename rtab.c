@@ -62,6 +62,20 @@ void rtl_free(rtl_t* curr)
 	while (curr != NULL) curr = rtl_del(curr);
 }
 
+rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
+{
+	if (rule == NULL) return NULL;
+	const size_t S = POW2(size);
+	while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	while (rule != NULL) {
+		if (size == rule->size) {
+			if (mw_equal(S,tab,rule->tab)) return (rtl_t*)rule;
+		}
+		rule = rule->next;
+	}
+	return NULL;
+}
+
 /*********************************************************************/
 /*                      rule table                                   */
 /*********************************************************************/
@@ -197,6 +211,7 @@ int rt_fread_id(const int size, word_t* const tab, FILE* const fstream)
 	size_t len = 0;
 	const ssize_t ilen = getline(&str,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
+	str[ilen-1] = '\0'; // strip trailing newline
 	const int res = rt_sread_id(size,tab,str);
 	free(str);
 	return res;
@@ -211,11 +226,11 @@ int rt_sread_id(const int size, word_t* const tab, const char* const str)
 {
 	const size_t C = rt_hexchars(size);
 	const size_t len = strlen(str);
-	if (!(len == C || (len == C+1 && str[C] == '\n'))) return 1; // failure - wrong number of chars (ignore newline at end)
+	if (len != C) return 1; // failure - wrong number of chars (ignore newline at end)
 	size_t r = 0;
 	for (size_t c=0;c<C;++c) {
 		const word_t u = hex2word(str[c]);
-		if (u == 0) return 2; // failure - non-hex chars
+		if (u == 999) return 2; // failure - non-hex chars
 		for (int i=0;i<4;++i) tab[r++] = BITON(u,i);
 	}
 	return 0; // success
