@@ -27,8 +27,8 @@ int sim_xplor(int argc, char* argv[])
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_VARG(n,       size_t,  0,            "number of words (or 0 for automatic)");
-	CLAP_CARG(rsiz,    int,     5,            "CA rule size");
+	CLAP_CARG(nwords,  size_t,  0,            "number of words (or 0 for automatic)");
+	CLAP_VARG(rsiz,    int,     5,            "CA rule size");
 	CLAP_VARG(rlam,    double,  0.6,          "CA rule lambda");
 	CLAP_CARG(rseed,   ulong,   0,            "CA rule random seed (or 0 for unpredictable)");
 	CLAP_VARG(fsiz,    int,     0,            "filter rule size (or 0 for same as rule size)");
@@ -62,7 +62,7 @@ int sim_xplor(int argc, char* argv[])
 	size_t nrows, ncols, nrwords;
 	get_ca_dims(ppc,gpx,gpy,&nrows,&ncols,&nrwords,1);
 
-	n = (n == 0 ? nrwords : n);
+	const size_t n = (nwords == 0 ? nrwords : nwords);
 	const size_t I = nrows;
 
 	puts("\n---------------------------------------------------------------------------------------\n");
@@ -82,10 +82,10 @@ int sim_xplor(int argc, char* argv[])
 	const int uto = untwist ? utoff == 0 ? rsiz/2 : utoff : 0;
 
 	// allocate CA storage
-	const size_t nwords = I*n;
-	word_t* const ca  = mw_alloc(nwords); // the CA
-	word_t* const fca = mw_alloc(nwords); // the filtered CA
-	word_t* const wca = mw_alloc(nwords); // working CA
+	const size_t ncawords = I*n;
+	word_t* const ca  = mw_alloc(ncawords); // the CA
+	word_t* const fca = mw_alloc(ncawords); // the filtered CA
+	word_t* const wca = mw_alloc(ncawords); // working CA
 
 	// window drawing constants
 	const int  imx    = ppc*(int)n*WBITS; // pixels per row
@@ -147,6 +147,7 @@ int sim_xplor(int argc, char* argv[])
 		"d : (or DEL) delete CA/filter\n"
 		"j : (or left-arrow) previous CA/filter\n"
 		"k : (or right-arrow) next CA/filter\n"
+		"c : change CA/filter size\n"
 		"v : invert CA/filter\n"
 		"f : forward CA one screen\n"
 		"i : re-initialise CA\n"
@@ -243,7 +244,7 @@ int sim_xplor(int argc, char* argv[])
 		case 'N': // new user-supplied CA/filter
 
 			if (filtering) {
-				printf("enter filter id : "); // prompt for ftid
+				printf("enter filter id (rule size %d): ",fsiz); // prompt for ftid
 				fflush(stdout);
 				word_t* const ftab = rt_alloc(fsiz);
 				const int res = rt_read_id(fsiz,ftab);
@@ -266,25 +267,25 @@ int sim_xplor(int argc, char* argv[])
 				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
 			}
 			else {
-				printf("enter CA id : "); // prompt for rtid
+				printf("enter CA id (rule size %d): ",rsiz); // prompt for rtid
 				fflush(stdout);
-				word_t* const tab = rt_alloc(rsiz);
-				const int res = rt_read_id(rsiz,tab);
+				word_t* const rtab = rt_alloc(rsiz);
+				const int res = rt_read_id(rsiz,rtab);
 				printf("exploring : ");
 				fflush(stdout);
 				if (res == 1) {
 					printf("input is wrong length\n");
-					free(tab);
+					free(rtab);
 					break;
 				}
 				if (res == 2) {
 					printf("input contains non-hex characters\n");
-					free(tab);
+					free(rtab);
 					break;
 				}
 				rule = rtl_add(rule,rsiz);
-				rt_copy(rule->size,rule->tab,tab);
-				free(tab);
+				rt_copy(rule->size,rule->tab,rtab);
+				free(rtab);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
 				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
@@ -387,6 +388,36 @@ int sim_xplor(int argc, char* argv[])
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
+		case 'c': // change CA/filter size (will apply to new CA/filter)
+
+			if (filtering) {
+				printf("enter new filter rule size : "); // prompt for size
+				fflush(stdout);
+				int newsize;
+				const int ret = scanf("%d",&newsize);
+				printf("exploring : ");
+				if (ret == 0 || newsize == 0) {
+					printf("bad size\n");
+					break;
+				}
+				fsiz = newsize;
+				printf("new filter rule size = %d\n",fsiz);
+			}
+			else {
+				printf("enter new CA rule size : "); // prompt for size
+				fflush(stdout);
+				int newsize;
+				const int ret = scanf("%d",&newsize);
+				printf("exploring : ");
+				if (ret == 0 || newsize == 0) {
+					printf("bad size\n");
+					break;
+				}
+				rsiz = newsize;
+				printf("new CA rule size = %d\n",rsiz);
+			}
+			break;
+
 		case 'v': // invert CA/filter rule
 
 			if (filtering) {
@@ -477,7 +508,7 @@ int sim_xplor(int argc, char* argv[])
 		case 'p': // calculate CA period
 
 			printf("calculating CA period... "); fflush(stdout);
-			mw_copy(nwords,wca,ca); // copy to working CA
+			mw_copy(ncawords,wca,ca); // copy to working CA
 			mw_run(prff,n,wca,rule->size,rule->tab);
 			int prot;
 			const size_t period = ca_period(pmax,n,wca,rule->size,rule->tab,&prot);

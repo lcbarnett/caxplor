@@ -1,6 +1,7 @@
 #include <time.h>
 
 #include "ca.h"
+#include "rtab.h"
 #include "clap.h"
 #include "utils.h"
 
@@ -23,22 +24,43 @@ int sim_test(int argc, char* argv[])
 	FILE* const rtfs = fopen(rtfile,"r");
 	if (rtfs == NULL) PEEXIT("failed to open saved rtids file '%s'",rtfile);
 
+//	rtl_t* rule = NULL;
+
+
 	char* line = NULL;
 	size_t len = 0;
 	int nlines = 0;
+//	int res;
 	while (getline(&line,&len,rtfs) != -1) {
 		++nlines;
 		printf("line %d: %s",nlines,line);
 
 		const char* token = strtok(line," ");
 		printf("\t(%s)\n",token);
-		int BB;
-		sscanf(token,"%d",&BB);
-		printf("\tread %d\n",BB);
+		int rsiz;
+		sscanf(token,"%d",&rsiz);
+		printf("\tread %d\n",rsiz);
 
 		token = strtok(NULL," ");
 		printf("\t(%s)\n",token);
 		printf("\tread [%s]\n",token);
+/*
+		word_t* const rtab = rt_alloc(rsiz);
+		res = rt_read_id(rsiz,rtab);
+		if (res == 1) {
+			printf("input is wrong length\n");
+			free(rtab);
+			break;
+		}
+		if (res == 2) {
+			printf("input contains non-hex characters\n");
+			free(rtab);
+			break;
+		}
+		rule = rtl_add(rule,rsiz);
+		rt_copy(rule->size,rule->tab,rtab);
+*/
+
 
     }
 

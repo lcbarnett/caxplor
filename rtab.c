@@ -171,34 +171,54 @@ void rt_print_id(const int size, const word_t* const tab)
 	rt_fprint_id(size,tab,stdout);
 }
 
+char* rt_sprint_id(const int size, const word_t* const tab) // allocates C string; remember to free!
+{
+	const size_t S = POW2(size);
+	const size_t C = rt_hexchars(size);
+	char* const str = malloc((C+1)*sizeof(char));
+	word_t u = 0;
+	int i = 0;
+	size_t c = 0;
+	for (size_t r=0;r<S;++r) {
+		PUTBIT(u,i,tab[r]);
+		if ((++i)%4 == 0) {
+			str[c++] = hexchar[u];
+			u = 0;
+			i = 0;
+		}
+	}
+	str[c] = '\0'; // null terminator
+	return str;
+}
+
 int rt_fread_id(const int size, word_t* const tab, FILE* const fstream)
 {
-	const size_t C = rt_hexchars(size);
-	char* xstr = NULL;
+	char* str = NULL;
 	size_t len = 0;
-	const ssize_t ilen = getline(&xstr,&len,fstream);
+	const ssize_t ilen = getline(&str,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
-	if ((size_t)ilen != C+1) { // failure - wrong number of chars
-		free(xstr);
-		return 1;
-	}
-	size_t r = 0;
-	for (size_t c=0;c<C;++c) {
-		const char x = xstr[c];
-		const word_t u = (word_t)((x >= '0') & (x <= '9') ? x-48 : (x >= 'A') & (x <= 'F') ? x-55 : 0);
-		if (u == 0) { // failure - non-hex chars
-			free(xstr);
-			return 2;
-		}
-		for (int i=0;i<4;++i) tab[r++] = BITON(u,i);
-	}
-	free(xstr);
-	return 0; // success
+	const int res = rt_sread_id(size,tab,str);
+	free(str);
+	return res;
 }
 
 int rt_read_id(const int size, word_t* const tab)
 {
 	return rt_fread_id(size,tab,stdin);
+}
+
+int rt_sread_id(const int size, word_t* const tab, const char* const str)
+{
+	const size_t C = rt_hexchars(size);
+	const size_t len = strlen(str);
+	if (!(len == C || (len == C+1 && str[C] == '\n'))) return 1; // failure - wrong number of chars (ignore newline at end)
+	size_t r = 0;
+	for (size_t c=0;c<C;++c) {
+		const word_t u = hex2word(str[c]);
+		if (u == 0) return 2; // failure - non-hex chars
+		for (int i=0;i<4;++i) tab[r++] = BITON(u,i);
+	}
+	return 0; // success
 }
 
 void rt_entro_hist(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
