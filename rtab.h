@@ -11,13 +11,14 @@
 /*********************************************************************/
 
 typedef struct rtl_node {
-	word_t*          rtab;
+	int              size;
+	word_t*          tab;
 	struct rtl_node* prev;
 	struct rtl_node* next;
 	struct rtl_node* filt; // pointer to filter list
 } rtl_t;
 
-rtl_t*  rtl_add  (rtl_t* curr, const int B); // insert after
+rtl_t*  rtl_add  (rtl_t* curr, const int size); // insert after
 rtl_t*  rtl_del  (rtl_t* curr);
 void    rtl_free (rtl_t* curr);
 
@@ -25,60 +26,60 @@ void    rtl_free (rtl_t* curr);
 /*                      rule table                                   */
 /*********************************************************************/
 
-static inline void rt_copy(const int B, word_t* const rtdest, const word_t* const rtsrc)
+static inline void rt_copy(const int size, word_t* const rtdest, const word_t* const rtsrc)
 {
-	memcpy(rtdest,rtsrc,POW2(B)*sizeof(word_t));
+	memcpy(rtdest,rtsrc,POW2(size)*sizeof(word_t));
 }
 
-static inline size_t rt_nsetbits(const int B, const word_t* const rtab)
+static inline size_t rt_nsetbits(const int size, const word_t* const tab)
 {
 	size_t b = 0;
-	for (size_t r=0;r<POW2(B);++r) if (rtab[r]) ++b;
+	for (size_t r=0;r<POW2(size);++r) if (tab[r]) ++b;
 	return b;
 }
 
-static inline double rt_lambda(const int B, const word_t* const rtab) // Langton's lambda
+static inline double rt_lambda(const int size, const word_t* const tab) // Langton's lambda
 {
-	return (double)rt_nsetbits(B,rtab)/(double)POW2(B);
+	return (double)rt_nsetbits(size,tab)/(double)POW2(size);
 }
 
-static inline size_t rt_nwords(const int B)
+static inline size_t rt_nwords(const int size)
 {
-	return B > 6 ? POW2(B-6) : 1;
+	return size > 6 ? POW2(size-6) : 1;
 }
 
-static inline size_t rt_hexchars(const int B)
+static inline size_t rt_hexchars(const int size)
 {
-	return B > 2 ? POW2(B-2) : 1;
+	return size > 2 ? POW2(size-2) : 1;
 }
 
-static inline void rt_randomise(const int B, word_t* const rtab, const double lam, mt_t* const prng)
+static inline void rt_randomise(const int size, word_t* const tab, const double lam, mt_t* const prng)
 {
-	for (size_t r=0;r<POW2(B);++r) rtab[r] = (mt_rand(prng) < lam ? WONE : WZERO);
+	for (size_t r=0;r<POW2(size);++r) tab[r] = (mt_rand(prng) < lam ? WONE : WZERO);
 }
 
-static inline void rt_invert(const int B, word_t* const rtab)
+static inline void rt_invert(const int size, word_t* const tab)
 {
-	for (size_t r=0;r<POW2(B);++r) rtab[r] = WONE-rtab[r];
+	for (size_t r=0;r<POW2(size);++r) tab[r] = WONE-tab[r];
 }
 
-word_t* rt_alloc       (const int B);
+word_t* rt_alloc       (const int size);
 
-void    rt_randomb     (const int B, word_t* const rtab, const size_t b, mt_t* const prng);
-void    rt_from_mwords (const int B, word_t* const rtab, const size_t nrtwords, const word_t* const rtwords);
-int     rt_fread_id    (const int B, word_t* const rtab, FILE* const fstream);
-int     rt_read_id     (const int B, word_t* const rtab);
+void    rt_randomb     (const int size, word_t* const tab, const size_t b, mt_t* const prng);
+void    rt_from_mwords (const int size, word_t* const tab, const size_t nrtwords, const word_t* const rtwords);
+int     rt_fread_id    (const int size, word_t* const tab, FILE* const fstream);
+int     rt_read_id     (const int size, word_t* const tab);
 
-size_t  rt_uwords      (const int B, const word_t* const rtab, const int m);
-void    rt_to_mwords   (const int B, const word_t* const rtab, const size_t nrtwords, word_t* const rtwords);
-void    rt_fprint      (const int B, const word_t* const rtab, FILE* const fstream);
-void    rt_print       (const int B, const word_t* const rtab);
-void    rt_fprint_id   (const int B, const word_t* const rtab, FILE* const fstream);
-void    rt_print_id    (const int B, const word_t* const rtab);
-void    rt_entro_hist  (const int B, const word_t* const rtab, const int m, const int iff, ulong* const bin);
-double  rt_entro       (const int B, const word_t* const rtab, const int m, const int iff);
-void    rt_trent1_hist (const int B, const word_t* const rtab, const int F, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2);
-double  rt_trent1      (const int B, const word_t* const rtab, const int F, const word_t* const ftab, const int m, const int iff, const int ilag);
+size_t  rt_uwords      (const int size, const word_t* const tab, const int m);
+void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nrtwords, word_t* const rtwords);
+void    rt_fprint      (const int size, const word_t* const tab, FILE* const fstream);
+void    rt_print       (const int size, const word_t* const tab);
+void    rt_fprint_id   (const int size, const word_t* const tab, FILE* const fstream);
+void    rt_print_id    (const int size, const word_t* const tab);
+void    rt_entro_hist  (const int size, const word_t* const tab,  const int m, const int iff, ulong* const bin);
+double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff);
+void    rt_trent1_hist (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2);
+double  rt_trent1      (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag);
 
 static const unsigned char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 

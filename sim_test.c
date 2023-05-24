@@ -11,14 +11,14 @@ int sim_test(int argc, char* argv[])
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_CARG(B,       int,     5,            "CA rule breadth");
-	CLAP_VARG(F,       int,     0,            "filter rule breadth (or 0 for same as rule breadth)");
+	CLAP_CARG(rsiz,    int,     5,            "CA rule size");
+	CLAP_VARG(fsiz,    int,     0,            "filter rule size (or 0 for same as rule size)");
 	CLAP_CARG(rtfile,  cstr,   "saved.rt",    "saved rtids file name");
 	puts("---------------------------------------------------------------------------------------\n");
 
-	F = F == 0 ? B : F;
+	fsiz = fsiz == 0 ? rsiz : fsiz;
 
-	printf("B = %d, F = %d, rtfile = %s\n\n",B,F,rtfile);
+	printf("rsiz = %d, fsiz = %d, rtfile = %s\n\n",rsiz,fsiz,rtfile);
 
 	FILE* const rtfs = fopen(rtfile,"r");
 	if (rtfs == NULL) PEEXIT("failed to open saved rtids file '%s'",rtfile);

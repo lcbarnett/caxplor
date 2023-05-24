@@ -11,8 +11,8 @@ int sim_bmark(int argc, char* argv[])
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_CARG(R,       int,     5,            "CA rule breadth");
-	CLAP_CARG(F,       int,     5,            "CA filter rule breadth");
+	CLAP_CARG(rsiz,    int,     5,            "CA rule size");
+	CLAP_CARG(fsiz,    int,     5,            "CA filter rule size");
 	CLAP_CARG(n,       size_t,  10,           "number of words");
 	CLAP_CARG(I,       size_t,  1000,         "number of iterations");
 	CLAP_CARG(S,       size_t,  1000,         "number of samples");
@@ -29,10 +29,10 @@ int sim_bmark(int argc, char* argv[])
 
 	// CA rule tables
 
-	word_t* const rtab = rt_alloc(R);
-	word_t* const ftab = rt_alloc(F);
-	rt_randomise(R,rtab,0.5,&rng);
-	rt_randomise(F,ftab,0.5,&rng);
+	word_t* const rtab = rt_alloc(rsiz);
+	word_t* const ftab = rt_alloc(fsiz);
+	rt_randomise(rsiz,rtab,0.5,&rng);
+	rt_randomise(fsiz,ftab,0.5,&rng);
 
 	// allocate CA storage
 
@@ -63,7 +63,7 @@ int sim_bmark(int argc, char* argv[])
 	// run CAs
 
 	ts = (double)clock()/(double)CLOCKS_PER_SEC;
-	for (size_t k=0; k<S; ++k) ca_run(I,n,ca[k],NULL,R,rtab,0);
+	for (size_t k=0; k<S; ++k) ca_run(I,n,ca[k],NULL,rsiz,rtab,0);
 	te = (double)clock()/(double)CLOCKS_PER_SEC;
 	printf("CA run    time = %8.6f\n",te-ts);
 
@@ -77,7 +77,7 @@ int sim_bmark(int argc, char* argv[])
 	// filter CAs
 
 	ts = (double)clock()/(double)CLOCKS_PER_SEC;
-	for (size_t k=0; k<S; ++k) ca_filter(I,n,fa[k],ua[k],F,ftab);
+	for (size_t k=0; k<S; ++k) ca_filter(I,n,fa[k],ua[k],fsiz,ftab);
 	te = (double)clock()/(double)CLOCKS_PER_SEC;
 	printf("CA filter time = %8.6f\n",te-ts);
 
