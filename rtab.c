@@ -85,7 +85,6 @@ rtl_t* rtl_fread(FILE* rtfs)
 	int res;
 	ssize_t ilen;
 	while ((ilen = getline(&line,&len,rtfs)) != -1) {
-
 		line[ilen-1] = '\0'; // strip trailing newline
 
 		++nlines;

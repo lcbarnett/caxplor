@@ -168,6 +168,9 @@ int sim_xplor(int argc, char* argv[])
 		printf("Reading rules and filters from '%s' ..\n",irtfile);
 		FILE* const irtfs = fopen(irtfile,"r");
 		if (irtfs == NULL) PEEXIT("failed to open input rtids file '%s'",irtfile);
+		fseek(irtfs,0,SEEK_END); // go to end of file
+		if (ftell(irtfs) == 0) EEXIT("Input rtids file '%s' is empty!",irtfile);
+		fseek(irtfs,0,SEEK_SET); // go to begin of file
 		rule = rtl_fread(irtfs);
 		ASSERT(rule != NULL,"No valid rtids found in input file!");
 		if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
