@@ -36,7 +36,8 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(fseed,   ulong,   0,            "filter rule random seed (0 for unpredictable)");
 	CLAP_CARG(iseed,   ulong,   0,            "initialisation random seed (0 for unpredictable)");
 	CLAP_CARG(untwist, int,     1,            "untwist?");
-	CLAP_CARG(rtfile,  cstr,   "saved.rt",    "saved rtids file name");
+	CLAP_CARG(irtfile, cstr,   "",            "input rtids file (empty to start with random rtid)");
+	CLAP_CARG(ortfile, cstr,   "saved.rt",    "saved rtids file name");
 	CLAP_CARG(utoff,   int,     0,            "untwist offset (or 0 for half-size)");
 	CLAP_CARG(prff,    size_t,  1000000,      "period fast-forwrd");
 	CLAP_CARG(pmax,    size_t,  100000,       "maximum period");
@@ -74,10 +75,6 @@ int sim_xplor(int argc, char* argv[])
 	mt_seed(&rrng,rseed);
 	mt_seed(&irng,iseed);
 	mt_seed(&frng,fseed);
-
-	// saved CA rules file
-	FILE* const rtfs = fopen(rtfile,"a");
-	if (rtfs == NULL) PEEXIT("failed to open saved rtids file '%s'",rtfile);
 
 	const int uto = untwist ? utoff == 0 ? rsiz/2 : utoff : 0;
 
@@ -160,10 +157,22 @@ int sim_xplor(int argc, char* argv[])
 	printf("%s\n",usagestr);
 	fflush(stdout);
 
-	// initialise CA rule table list with random
+	// initialise CA rule table list from file or random
 
-	rtl_t* rule = rtl_add(NULL,rsiz); // current CA rule: this should never be NULL!
-	rt_randomise(rule->size,rule->tab,rlam,&rrng);
+	rtl_t* rule;
+	if (irtfile[0] == '\0') { // no input rtid file
+		rule = rtl_add(NULL,rsiz); // current CA rule: this should never be NULL!
+		rt_randomise(rule->size,rule->tab,rlam,&rrng);
+	}
+	else { // have input rtid file
+		printf("Reading rules and filters from '%s' ..\n",irtfile);
+		FILE* const irtfs = fopen(irtfile,"r");
+		if (irtfs == NULL) PEEXIT("failed to open input rtids file '%s'",irtfile);
+		rule = rtl_fread(irtfs);
+		ASSERT(rule != NULL,"No valid rtids found in input file!");
+		if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
+		printf("Done\n\n");
+	}
 	printf("exploring : random CA : id = "); rt_print_id(rule->size,rule->tab);
 	printf(", lambda = %6.4f\n",rt_lambda(rule->size,rule->tab));
 	mw_randomise(n,ca,&irng);
@@ -171,6 +180,10 @@ int sim_xplor(int argc, char* argv[])
 	ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
 	printf("%s : ",modestr);
 	fflush(stdout);
+
+	// saved CA rules file
+	FILE* const ortfs = fopen(ortfile,"a");
+	if (ortfs == NULL) PEEXIT("failed to open saved rtids file '%s'",ortfile);
 
 	// window event loop
 	while (1) {
@@ -476,18 +489,18 @@ int sim_xplor(int argc, char* argv[])
 		case 's': // save CA/filter rule id to file
 
 			printf("saving CA ");
-			fprintf(rtfs,"%d ",rule->size);
-			rt_fprint_id(rule->size,rule->tab,rtfs);
+			fprintf(ortfs,"%d ",rule->size);
+			rt_fprint_id(rule->size,rule->tab,ortfs);
 			if (rule->filt != NULL) {
 				printf("and filter rule ids\n");
 				fflush(stdout);
-				fprintf(rtfs," %d ",rule->filt->size);
-				rt_fprint_id(rule->filt->size,rule->filt->tab,rtfs);
+				fprintf(ortfs," %d ",rule->filt->size);
+				rt_fprint_id(rule->filt->size,rule->filt->tab,ortfs);
 			}
 			else {
 				printf("rule id\n");
 			}
-				fputc('\n',rtfs);
+				fputc('\n',ortfs);
 			break;
 
 		case 'w': // write CA/filtered CA image to file
@@ -630,7 +643,7 @@ int sim_xplor(int argc, char* argv[])
 	XDestroyWindow(dis,win);
 	XCloseDisplay(dis);
 
-	if (fclose(rtfs) == -1) PEEXIT("failed to close saved rtids file '%s'",rtfile);
+	if (fclose(ortfs) == -1) PEEXIT("failed to close saved rtids file '%s'",ortfile);
 
 	rtl_free(rule);
 

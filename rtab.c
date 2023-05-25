@@ -76,6 +76,112 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 	return NULL;
 }
 
+rtl_t* rtl_fread(FILE* rtfs)
+{
+	rtl_t* rule  = NULL;
+	char* line = NULL;
+	size_t len = 0;
+	int nlines = 0;
+	int res;
+	ssize_t ilen;
+	while ((ilen = getline(&line,&len,rtfs)) != -1) {
+
+		line[ilen-1] = '\0'; // strip trailing newline
+
+		++nlines;
+		printf("%3d :",nlines);
+
+		const char* token = strtok(line," ");
+		int rsiz;
+		sscanf(token,"%d",&rsiz);
+		printf(" CA size = %d",rsiz);
+		if (rsiz < 1) {
+			printf(" - ERROR: bad size - skipped\n");
+			continue;
+		}
+
+		token = strtok(NULL," ");
+		printf(", CA id = %s",token);
+		word_t* const rtab = rt_alloc(rsiz);
+		res = rt_sread_id(rsiz,rtab,token);
+		if (res == 1) {
+			printf(" - ERROR: id is wrong length - skipped\n");
+			free(rtab);
+			continue;
+		}
+		if (res == 2) {
+			printf(" - ERROR: id contains non-hex characters - skipped\n");
+			free(rtab);
+			continue;
+		}
+		rtl_t* rrule = rtl_find(rule,rsiz,rtab);
+		if (rrule == NULL) {
+			rule = rtl_add(rule,rsiz);
+			printf(" (new)");
+			rt_copy(rsiz,rule->tab,rtab);
+		}
+		else {
+			rule = rrule;
+			printf(" (old)");
+		}
+		free(rtab);
+
+		token = strtok(NULL," ");
+		if (token == NULL) { // no filter id
+			printf(" : no filter id\n");
+			continue;
+		}
+
+		int fsiz;
+		sscanf(token,"%d",&fsiz);
+		printf(" : filter size = %d",fsiz);
+		if (fsiz < 1) {
+			printf(" - ERROR: bad size - skipped\n");
+			continue;
+		}
+
+		token = strtok(NULL," ");
+		printf(", filter id = %s",token);
+		word_t* const ftab = rt_alloc(fsiz);
+		res = rt_sread_id(fsiz,ftab,token);
+		if (res == 1) {
+			printf(" - ERROR: id is wrong length - skipped\n");
+			free(ftab);
+			continue;
+		}
+		if (res == 2) {
+			printf(" - ERROR: id contains non-hex characters - skipped\n");
+			free(ftab);
+			continue;
+		}
+		rtl_t* frule = rtl_find(rule->filt,fsiz,ftab);
+		if (frule == NULL) {
+			rule->filt = rtl_add(rule->filt,fsiz);
+			printf(" (new)");
+			rt_copy(fsiz,rule->filt->tab,ftab);
+		}
+		else {
+			rule->filt = frule;
+			printf(" (old)");
+		}
+		free(ftab);
+
+		token = strtok(NULL," ");
+		if (token != NULL) { // extra token
+			printf(" - WARNING: extra tokens ignored\n");
+			continue;
+		}
+
+		putchar('\n');
+    }
+
+	free(line);
+
+	while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+
+	return rule;
+}
+
 /*********************************************************************/
 /*                      rule table                                   */
 /*********************************************************************/
