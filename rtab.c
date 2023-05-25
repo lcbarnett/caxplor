@@ -84,23 +84,31 @@ rtl_t* rtl_fread(FILE* rtfs)
 	int nlines = 0;
 	int res;
 	ssize_t ilen;
+
+	// read lines
 	while ((ilen = getline(&line,&len,rtfs)) != -1) {
 		line[ilen-1] = '\0'; // strip trailing newline
 
 		++nlines;
 		printf("%3d :",nlines);
+		fflush(stdout);
 
 		const char* token = strtok(line," ");
 		int rsiz;
 		sscanf(token,"%d",&rsiz);
 		printf(" CA size = %d",rsiz);
+		fflush(stdout);
 		if (rsiz < 1) {
 			printf(" - ERROR: bad size - skipped\n");
+			len = 0;
+			free(line);
+			line = NULL;
 			continue;
 		}
 
 		token = strtok(NULL," ");
 		printf(", CA id = %s",token);
+		fflush(stdout);
 		word_t* const rtab = rt_alloc(rsiz);
 		res = rt_sread_id(rsiz,rtab,token);
 		if (res == 1) {
@@ -117,10 +125,12 @@ rtl_t* rtl_fread(FILE* rtfs)
 		if (rrule == NULL) {
 			rule = rtl_add(rule,rsiz);
 			printf(" (new)");
+			fflush(stdout);
 			rt_copy(rsiz,rule->tab,rtab);
 		}
 		else {
 			rule = rrule;
+			fflush(stdout);
 			printf(" (old)");
 		}
 		free(rtab);
@@ -134,6 +144,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 		int fsiz;
 		sscanf(token,"%d",&fsiz);
 		printf(" : filter size = %d",fsiz);
+		fflush(stdout);
 		if (fsiz < 1) {
 			printf(" - ERROR: bad size - skipped\n");
 			continue;
@@ -141,6 +152,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 		token = strtok(NULL," ");
 		printf(", filter id = %s",token);
+		fflush(stdout);
 		word_t* const ftab = rt_alloc(fsiz);
 		res = rt_sread_id(fsiz,ftab,token);
 		if (res == 1) {
@@ -157,12 +169,14 @@ rtl_t* rtl_fread(FILE* rtfs)
 		if (frule == NULL) {
 			rule->filt = rtl_add(rule->filt,fsiz);
 			printf(" (new)");
+			fflush(stdout);
 			rt_copy(fsiz,rule->filt->tab,ftab);
 		}
 		else {
 			printf(" (old)");
+			fflush(stdout);
 		}
-		while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // rewind to beginning of filter list
+		if (rule->filt != NULL) while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // rewind to beginning of filter list
 		free(ftab);
 
 		token = strtok(NULL," ");
@@ -176,7 +190,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 	free(line);
 
-	while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
 
 	return rule;
 }
