@@ -78,35 +78,50 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 
 rtl_t* rtl_fread(FILE* rtfs)
 {
+	// A .rt (rtids) file should have lines of the form:
+	//
+	//     CA-size CA-rtid filter-size filter-rtid
+	//
+	// Whitespace in lines is ignored, and lines beginning
+	// with '#' are taken as comments and ignored.
+
 	rtl_t* rule  = NULL;
 	char* line = NULL;
 	size_t len = 0;
 	int nlines = 0;
 	int res;
 	ssize_t ilen;
+	char delimit[]=" \t\r\n\v\f"; // POSIX whitespace characters
 
 	// read lines
 	while ((ilen = getline(&line,&len,rtfs)) != -1) {
-		line[ilen-1] = '\0'; // strip trailing newline
 
 		++nlines;
 		printf("%3d :",nlines);
 		fflush(stdout);
 
-		const char* token = strtok(line," ");
+		if (ilen > 0) line[ilen-1] = '\0'; // strip trailing newline
+
+		const char* token = strtok(line,delimit);
+		if (token == NULL) {
+			printf(" empty line\n");
+			continue;
+		}
+		if (token[0] == '#') { // comment!
+			printf(" comment line\n");
+			continue;
+		}
+
 		int rsiz;
 		sscanf(token,"%d",&rsiz);
 		printf(" CA size = %d",rsiz);
 		fflush(stdout);
 		if (rsiz < 1) {
 			printf(" - ERROR: bad size - skipped\n");
-			len = 0;
-			free(line);
-			line = NULL;
 			continue;
 		}
 
-		token = strtok(NULL," ");
+		token = strtok(NULL,delimit);
 		printf(", CA id = %s",token);
 		fflush(stdout);
 		word_t* const rtab = rt_alloc(rsiz);
@@ -135,7 +150,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 		}
 		free(rtab);
 
-		token = strtok(NULL," ");
+		token = strtok(NULL,delimit);
 		if (token == NULL) { // no filter id
 			printf(" : no filter id\n");
 			continue;
@@ -150,7 +165,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 			continue;
 		}
 
-		token = strtok(NULL," ");
+		token = strtok(NULL,delimit);
 		printf(", filter id = %s",token);
 		fflush(stdout);
 		word_t* const ftab = rt_alloc(fsiz);
@@ -179,7 +194,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 		if (rule->filt != NULL) while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // rewind to beginning of filter list
 		free(ftab);
 
-		token = strtok(NULL," ");
+		token = strtok(NULL,delimit);
 		if (token != NULL) { // extra token
 			printf(" - WARNING: extra tokens ignored\n");
 			continue;
