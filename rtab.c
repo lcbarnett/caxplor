@@ -161,9 +161,9 @@ rtl_t* rtl_fread(FILE* rtfs)
 			rt_copy(fsiz,rule->filt->tab,ftab);
 		}
 		else {
-			rule->filt = frule;
 			printf(" (old)");
 		}
+		while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // rewind to beginning of filter list
 		free(ftab);
 
 		token = strtok(NULL," ");
