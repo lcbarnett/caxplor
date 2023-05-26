@@ -20,6 +20,8 @@ void print_id(const rtl_t* const rule, const int filtering)
 	putchar('\n');
 }
 
+// Main "CA Explorer" simulation
+
 int sim_xplor(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
