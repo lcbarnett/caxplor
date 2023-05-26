@@ -109,8 +109,8 @@ int sim_xplor(int argc, char* argv[])
 	const uint depth = (uint)XDefaultDepth(dis,scr);
 	XImage* const im = XCreateImage(dis,CopyFromParent,depth,ZPixmap,0,NULL,uimx,uimy,32,0);
 
-	// the image data (solid red)
-	im->data = malloc((uint)(im->bytes_per_line*imy));
+	// the image data
+	char* const imdata = im->data = malloc((uint)(im->bytes_per_line*imy));
 	XInitImage(im);
 
 	// control variables
@@ -177,7 +177,7 @@ int sim_xplor(int argc, char* argv[])
 	printf(", lambda = %6.4f\n",rt_lambda(rule->size,rule->tab));
 	mw_randomise(n,ca,&irng);
 	ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-	ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+	ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 	printf("%s : ",modestr);
 	fflush(stdout);
 
@@ -223,10 +223,10 @@ int sim_xplor(int argc, char* argv[])
 			filtering = 1-filtering;
 			if (filtering && rule->filt != NULL) {
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			strncpy(modestr,filtering ? "filtering" : "exploring",mslen);
 			print_id(rule,filtering);
@@ -240,7 +240,7 @@ int sim_xplor(int argc, char* argv[])
 				rule->filt = rtl_add(rule->filt,fsiz);
 				rt_randomise(rule->filt->size,rule->filt->tab,flam,&frng);
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
 				printf("random CA : ");
@@ -248,7 +248,7 @@ int sim_xplor(int argc, char* argv[])
 				rt_randomise(rule->size,rule->tab,rlam,&rrng);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -277,7 +277,7 @@ int sim_xplor(int argc, char* argv[])
 				rt_copy(rule->size,rule->filt->tab,ftab);
 				free(ftab);
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
 				printf("enter CA id (rule size %d): ",rsiz); // prompt for rtid
@@ -301,7 +301,7 @@ int sim_xplor(int argc, char* argv[])
 				free(rtab);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -317,11 +317,11 @@ int sim_xplor(int argc, char* argv[])
 				printf("deleting filter : ");
 				rule->filt = rtl_del(rule->filt);
 				if (rule->filt == NULL) {
-					ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+					ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 				}
 				else {
 					ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-					ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+					ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 				}
 			}
 			else {
@@ -333,7 +333,7 @@ int sim_xplor(int argc, char* argv[])
 				rule = rtl_del(rule);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -353,7 +353,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("previous filter : ");
 				rule->filt = rule->filt->prev;
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
 				if (rule->prev == NULL) {
@@ -364,7 +364,7 @@ int sim_xplor(int argc, char* argv[])
 				rule = rule->prev;
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -384,7 +384,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("next filter : ");
 				rule->filt = rule->filt->next;
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
 				if (rule->next == NULL) {
@@ -395,7 +395,7 @@ int sim_xplor(int argc, char* argv[])
 				rule = rule->next;
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -429,6 +429,7 @@ int sim_xplor(int argc, char* argv[])
 				rsiz = newsize;
 				printf("new CA rule size = %d\n",rsiz);
 			}
+			// no need to redisplay image
 			break;
 
 		case 'v': // invert CA/filter rule
@@ -441,14 +442,14 @@ int sim_xplor(int argc, char* argv[])
 				printf("inverting filter : ");
 				rt_invert(rule->filt->size,rule->filt->tab);
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 				flam = 1.0-flam;
 			}
 			else {
 				printf("inverting CA : ");
 				rt_invert(rule->size,rule->tab);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 				rlam = 1.0-rlam;
 			}
 			print_id(rule,filtering);
@@ -461,27 +462,26 @@ int sim_xplor(int argc, char* argv[])
 			fflush(stdout);
 			mw_copy(n,ca,ca+(I-1)*n);
 			ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
 		case 'i': // re-initialise and rerun
-
 			printf("re-initialise CA\n");
 			mw_randomise(n,ca,&irng);
 			ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
-				ca_zpixmap_create(I,n,fca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
 			}
 			else {
-				ca_zpixmap_create(I,n,ca,im->data,ppc,imx,imy,filtering);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
 			}
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
@@ -491,7 +491,7 @@ int sim_xplor(int argc, char* argv[])
 			printf("saving CA ");
 			fprintf(ortfs,"%d ",rule->size);
 			rt_fprint_id(rule->size,rule->tab,ortfs);
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				printf("and filter rule ids\n");
 				fflush(stdout);
 				fprintf(ortfs," %d ",rule->filt->size);
@@ -500,7 +500,8 @@ int sim_xplor(int argc, char* argv[])
 			else {
 				printf("rule id\n");
 			}
-				fputc('\n',ortfs);
+			fputc('\n',ortfs);
+			// no need to redisplay image
 			break;
 
 		case 'w': // write CA/filtered CA image to file
@@ -509,13 +510,14 @@ int sim_xplor(int argc, char* argv[])
 			snprintf(strbuf,strbuflen,"%s/ca_%03d.%s",imdir,imseq,imfmt);
 			printf("writing CA image to %s",strbuf);
 			ca_image_write_file(I,n,ca,ppc,imfmt,strbuf,0);
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				snprintf(strbuf,strbuflen,"%s/fca_%03d.%s",imdir,imseq,imfmt);
 				printf(", filtered image to %s",strbuf);
 				fflush(stdout);
 				ca_image_write_file(I,n,fca,ppc,imfmt,strbuf,0);
 			}
 			putchar('\n');
+			// no need to redisplay image
 			break;
 
 		case 'p': // calculate CA period
@@ -531,6 +533,7 @@ int sim_xplor(int argc, char* argv[])
 			else {
 				printf("%zu iterations, twist = %d\n",period,prot);
 			}
+			// no need to redisplay image
 			break;
 
 		case 'e': // calculate CA/filter entropy
@@ -543,7 +546,7 @@ int sim_xplor(int argc, char* argv[])
 			}
 			char gpename[] = "caentro";
 			gpd = gp_dopen(gpename,gpdir);
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				printf(" rule entropy = %8.6f, filter entropy = %8.6f\n",H[emmax],Hf[emmax]);
 				for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\t%g\n",m,H[m],Hf[m]);
 			}
@@ -568,7 +571,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set xr [%d:%d]\n",rule->size,emmax);
 			fprintf(gpc,"set yr [0:1]\n");
 			fprintf(gpc,"set ytics 0.1\n");
-			if (rule->filt != NULL) {
+			if (filtering && rule->filt != NULL) {
 				fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy'\n");
 			}
 			else {
@@ -576,10 +579,15 @@ int sim_xplor(int argc, char* argv[])
 			}
 			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
 			gp_fplot(gpename,gpdir,NULL);
+			// no need to redisplay image
 			break;
 
 		case 't': // calculate CA/filter 1-lag DD
 
+			if (!filtering) {
+				printf("not in filtering mode!\n");
+				break;
+			}
 			if (rule->filt == NULL) {
 				printf("no filter!\n");
 				break;
@@ -613,6 +621,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy', datfile u 1:4 w lines t 'rule/filter DD'\n");
 			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
 			gp_fplot(gptname,gpdir,NULL);
+			// no need to redisplay image
 			break;
 
 		case 'h': // display usage
