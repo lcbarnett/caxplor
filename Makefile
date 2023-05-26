@@ -1,4 +1,4 @@
-SRC = main.c word.c ca.c screen_metrics.c sim_xplor.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
+SRC = main.c word.c ca.c rtab.c screen_metrics.c sim_xplor.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
 OBJ = $(patsubst %.c,.%.o,$(SRC))
 DEP = $(patsubst %.o,%.d,$(OBJ))
 BIN = caxplor

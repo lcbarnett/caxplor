@@ -1,7 +1,9 @@
 #include <time.h>
 
 #include "ca.h"
+#include "rtab.h"
 #include "clap.h"
+#include "utils.h"
 
 int sim_test(int argc, char* argv[])
 {
@@ -10,10 +12,17 @@ int sim_test(int argc, char* argv[])
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_CARG(n,       int,     42,           "a variable");
+	CLAP_CARG(rtfile,  cstr,   "saved.rt",    "saved rtids file name");
 	puts("---------------------------------------------------------------------------------------\n");
 
-	printf("n = %d\n",n);
+	FILE* const rtfs = fopen(rtfile,"r");
+	if (rtfs == NULL) PEEXIT("failed to open saved rtids file '%s'",rtfile);
+
+	rtl_t* rule = rtl_fread(rtfs);
+
+	rtl_free(rule);
+
+	if (fclose(rtfs) == -1) PEEXIT("failed to close saved rtids file '%s'",rtfile);
 
 	return EXIT_SUCCESS;
 }
