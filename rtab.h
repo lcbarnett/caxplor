@@ -79,9 +79,9 @@ word_t* rt_alloc       (const int size);
 
 void    rt_randomb     (const int size, word_t* const tab, const size_t b, mt_t* const prng);
 void    rt_from_mwords (const int size, word_t* const tab, const size_t nrtwords, const word_t* const rtwords);
-int     rt_fread_id    (const int size, word_t* const tab, FILE* const fstream);
-int     rt_read_id     (const int size, word_t* const tab);
-int     rt_sread_id    (const int size, word_t* const tab, const char* const str);
+word_t* rt_fread_id    (FILE* const fstream, int* const size);   // allocates rule table on sucess - remember to free!
+word_t* rt_read_id     (int* const size);                        // allocates rule table on sucess - remember to free!
+word_t* rt_sread_id    (const char* const str, int* const size); // allocates rule table on sucess - remember to free!
 
 size_t  rt_uwords      (const int size, const word_t* const tab, const int m);
 void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nrtwords, word_t* const rtwords);

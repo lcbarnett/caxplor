@@ -259,51 +259,51 @@ int sim_xplor(int argc, char* argv[])
 		case 'N': // new user-supplied CA/filter
 
 			if (filtering) {
-				printf("enter filter id (rule size %d): ",fsiz); // prompt for ftid
+				printf("enter filter id: "); // prompt for ftid
 				fflush(stdout);
-				word_t* const ftab = rt_alloc(fsiz);
-				const int res = rt_read_id(fsiz,ftab);
+				word_t* const ftab = rt_read_id(&fsiz);
 				printf("filtering : ");
 				fflush(stdout);
-				if (res == 1) {
+				if (fsiz == -1) {
 					printf("input is wrong length\n");
-					free(ftab);
 					break;
 				}
-				if (res == 2) {
+				if (fsiz == -2) {
 					printf("input contains non-hex characters\n");
-					free(ftab);
 					break;
 				}
+				printf("filter rule size = %d\n",fsiz);
 				rule->filt = rtl_add(rule->filt,fsiz);
 				rt_copy(rule->size,rule->filt->tab,ftab);
 				free(ftab);
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
 				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
+				printf("filtering : ");
+				fflush(stdout);
 			}
 			else {
-				printf("enter CA id (rule size %d): ",rsiz); // prompt for rtid
+				printf("enter CA id: "); // prompt for rtid
 				fflush(stdout);
-				word_t* const rtab = rt_alloc(rsiz);
-				const int res = rt_read_id(rsiz,rtab);
+				word_t* const rtab = rt_read_id(&rsiz);
 				printf("exploring : ");
 				fflush(stdout);
-				if (res == 1) {
+				if (rsiz == -1) {
 					printf("input is wrong length\n");
-					free(rtab);
 					break;
 				}
-				if (res == 2) {
+				if (rsiz == -2) {
 					printf("input contains non-hex characters\n");
-					free(rtab);
 					break;
 				}
+				printf("CA rule size = %d\n",rsiz);
 				rule = rtl_add(rule,rsiz);
 				rt_copy(rule->size,rule->tab,rtab);
 				free(rtab);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
 				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
+				printf("exploring : ");
+				fflush(stdout);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
