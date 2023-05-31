@@ -112,18 +112,13 @@ rtl_t* rtl_fread(FILE* rtfs)
 			continue;
 		}
 
-		int rsiz;
-		sscanf(token,"%d",&rsiz);
-		printf(" CA size = %d",rsiz);
+		printf(" CA id = %s",token);
 		fflush(stdout);
-		if (rsiz < 1) {
+		const int rsiz = rt_hexsize(strlen(token));
+		if (rsiz == -1) {
 			printf(" - ERROR: bad size - skipped\n");
 			continue;
 		}
-
-		token = strtok(NULL,delimit);
-		printf(", CA id = %s",token);
-		fflush(stdout);
 		word_t* const rtab = rt_alloc(rsiz);
 		res = rt_sread_id(rsiz,rtab,token);
 		if (res == 1) {
@@ -156,18 +151,13 @@ rtl_t* rtl_fread(FILE* rtfs)
 			continue;
 		}
 
-		int fsiz;
-		sscanf(token,"%d",&fsiz);
-		printf(" : filter size = %d",fsiz);
+		printf(", filter id = %s",token);
 		fflush(stdout);
-		if (fsiz < 1) {
+		const int fsiz = rt_hexsize(strlen(token));
+		if (fsiz == -1) {
 			printf(" - ERROR: bad size - skipped\n");
 			continue;
 		}
-
-		token = strtok(NULL,delimit);
-		printf(", filter id = %s",token);
-		fflush(stdout);
 		word_t* const ftab = rt_alloc(fsiz);
 		res = rt_sread_id(fsiz,ftab,token);
 		if (res == 1) {

@@ -495,8 +495,7 @@ int sim_xplor(int argc, char* argv[])
 			rt_fprint_id(rule->size,rule->tab,ortfs);
 			if (filtering && rule->filt != NULL) {
 				printf("and filter rule ids\n");
-				fflush(stdout);
-				fprintf(ortfs," %d ",rule->filt->size);
+				fputc(' ',ortfs);
 				rt_fprint_id(rule->filt->size,rule->filt->tab,ortfs);
 			}
 			else {
