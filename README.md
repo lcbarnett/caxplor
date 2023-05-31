@@ -2,7 +2,7 @@
 Highly-efficient simulation, filtering and visualisation of 1D binary-state [cellular automata](https://en.wikipedia.org/wiki/Cellular_automaton).
 
 ### Building
-This code requires a 64-bit little-endian architecture, and uses [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for graphics. As yet, it has only been built and tested on Linux x86-64, but is in principle portable to MacOS with an X server, e.g.,  [XQuartz](https://www.xquartz.org/), or Windows with [WSL](https://learn.microsoft.com/en-us/windows/wsl/), [Cygwin](https://www.cygwin.com/) or an X server like [XMing](http://www.straightrunning.com/XmingNotes/) [^1].
+This code requires a 64-bit little-endian architecture, and uses [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for graphics. As yet, it has only been built and tested on Linux x86-64, but is in principle portable to MacOS with an X server, e.g.,  [XQuartz](https://www.xquartz.org/), or Windows with [WSL](https://learn.microsoft.com/en-us/windows/wsl/), [Cygwin](https://www.cygwin.com/) or an X server like [XMing](http://www.straightrunning.com/XmingNotes/) [^1]. It also reguires the [GD graphics library](https://libgd.github.io/pages/about.html); if you are on Linux, install the appropriate development package through your software manager.
 
 To build, you will need the [Make](https://www.gnu.org/software/make/) build tool. In a terminal, navigate to the caxplor root directory and type 'make' to build. There is no installation; the executable is called 'caxplor'.
 
