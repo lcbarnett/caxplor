@@ -2,7 +2,7 @@
 Highly-efficient simulation, filtering and visualisation of 1D binary-state [cellular automata](https://en.wikipedia.org/wiki/Cellular_automaton).
 
 ### Building
-This code requires a 64-bit little-endian architecture, and uses [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for graphics. As yet, it has only been built and tested on Linux x86-64, but is in principle portable to MacOS with an X server, e.g.,  [XQuartz](https://www.xquartz.org/), or Windows with [WSL](https://learn.microsoft.com/en-us/windows/wsl/), [Cygwin](https://www.cygwin.com/) or an X server like [XMing](http://www.straightrunning.com/XmingNotes/) [^1]. It also reguires the [GD graphics library](https://libgd.github.io/pages/about.html); if you are on Linux, install the appropriate development package through your software manager.
+This code requires a 64-bit little-endian architecture, and uses [X11/Xlib](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html) for graphics. As yet, it has only been built and tested on Linux x86-64, but is in principle portable to MacOS with an X server, e.g.,  [XQuartz](https://www.xquartz.org/), or Windows with [WSL](https://learn.microsoft.com/en-us/windows/wsl/), [Cygwin](https://www.cygwin.com/) or an X server like [XMing](http://www.straightrunning.com/XmingNotes/) [^1]. It also reguires the [GD graphics library](https://libgd.github.io/pages/about.html); if you are on Linux, install the appropriate development package through your software manager. 
 
 To build, you will need the [Make](https://www.gnu.org/software/make/) build tool. In a terminal, navigate to the caxplor root directory and type 'make' to build. There is no installation; the executable is called 'caxplor'.
 
@@ -25,6 +25,7 @@ Saved CA rules (and their filter rules, if present) may also be loaded from a fi
 ```
 ./caxplor -irtfile my_saved_rules.rt
 ```
+The entropy and 1-lag [transfer entropy](https://link.springer.com/book/10.1007/978-3-319-43222-9) (shameless plug!) for the current CA/filter may be calculated with the 'e' and 't' keys respectively. This (experimental and undocumented) feature requires the [Gnuplot](http://www.gnuplot.info/) scientific graphing utility to be installed on your system.
 
 There are currently a couple of (probably buggy/undocumented) routines for analysis and benchmarking, as well as a template for test routines, which may be run as `./caxplor ana`, `./caxplor bmark` and `./caxplor test` respectively; you may edit these to taste.
 
