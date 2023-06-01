@@ -336,8 +336,9 @@ word_t* rt_sread_id(const char* const str, int* const size) // allocates rule ta
 	const size_t len = strlen(str);
 	*size = rt_hexsize(len);
 	if (*size == -1) return NULL; // failure - ID is bad size
-	word_t* const tab = rt_alloc(*size);
 	size_t r = 0;
+	word_t* const tab = rt_alloc(*size);
+	const int nepc = *size == 1 ? 2 : 4; // number of table entries per char
 	for (size_t c=0;c<len;++c) {
 		const word_t u = hex2word(str[c]);
 		if (u == 999) {
@@ -345,7 +346,7 @@ word_t* rt_sread_id(const char* const str, int* const size) // allocates rule ta
 			*size = -2; // failure - non-hex chars
 			return NULL;
 		}
-		for (int i=0;i<4;++i) tab[r++] = BITON(u,i);
+		for (int i=0;i<nepc;++i) tab[r++] = BITON(u,i);
 	}
 	return tab; // success
 }
