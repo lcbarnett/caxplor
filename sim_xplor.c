@@ -565,6 +565,7 @@ int sim_xplor(int argc, char* argv[])
 				printf("rule id\n");
 			}
 			fputc('\n',ortfs);
+			fflush(ortfs); // write to file
 			// no need to redisplay image
 			break;
 
