@@ -55,6 +55,16 @@ static inline size_t rt_hexchars(const int size)
 	return size > 2 ? POW2(size-2) : 1;
 }
 
+static inline int rt_hexsize(const size_t len)
+{
+	if (len == 0) return -1; // error
+	if (len == 1) return 1;
+	size_t size = 3, slen = 1;
+	while ((slen <<= 1) < len) ++size;
+	if (slen > len) return -1; // error
+	return (int)size;
+}
+
 static inline void rt_randomise(const int size, word_t* const tab, const double lam, mt_t* const prng)
 {
 	for (size_t r=0;r<POW2(size);++r) tab[r] = (mt_rand(prng) < lam ? WONE : WZERO);
@@ -69,9 +79,9 @@ word_t* rt_alloc       (const int size);
 
 void    rt_randomb     (const int size, word_t* const tab, const size_t b, mt_t* const prng);
 void    rt_from_mwords (const int size, word_t* const tab, const size_t nrtwords, const word_t* const rtwords);
-int     rt_fread_id    (const int size, word_t* const tab, FILE* const fstream);
-int     rt_read_id     (const int size, word_t* const tab);
-int     rt_sread_id    (const int size, word_t* const tab, const char* const str);
+word_t* rt_fread_id    (FILE* const fstream, int* const size);   // allocates rule table on sucess - remember to free!
+word_t* rt_read_id     (int* const size);                        // allocates rule table on sucess - remember to free!
+word_t* rt_sread_id    (const char* const str, int* const size); // allocates rule table on sucess - remember to free!
 
 size_t  rt_uwords      (const int size, const word_t* const tab, const int m);
 void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nrtwords, word_t* const rtwords);

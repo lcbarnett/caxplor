@@ -212,37 +212,16 @@ static inline void mw_filter(const size_t n, word_t* const wnew, const word_t* c
 {
 	const int WB = WBITS-B;
 	const word_t BMASK = WONES>>WB; // mask to clear bits above 1st B
-	size_t k = 0;
-	for (;k<n-1;++k) {
+	for (size_t k=0;k<n;++k) {
 		size_t wk = w[k];
+		const word_t wk1 = k < n-1 ? w[k+1] : w[0]; // next word : wrap to lo-word on last word
 		int i = 0;
-		for (;i<WB;   ++i,wk>>=1) PUTBIT(wnew[k],i,f[wk&BMASK]);
-		wk |= (w[k+1]<<B); // splice in next word
-		for (;i<WBITS;++i,wk>>=1) PUTBIT(wnew[k],i,f[wk&BMASK]);
-
+		word_t wnewk;
+		for (;i<WB;   ++i,wk>>=1) PUTBIT(wnewk,i,f[wk&BMASK]);
+		wk |= (wk1<<B); // splice in next word
+		for (;i<WBITS;++i,wk>>=1) PUTBIT(wnewk,i,f[wk&BMASK]);
+		wnew[k] = wnewk;
 	}
-	// need to wrap for the last word
-	size_t wk = w[n-1];
-	int i = 0;
-	for (;i<WB;   ++i,wk>>=1) PUTBIT(wnew[k],i,f[wk&BMASK]);
-	wk |= (w[0]<<B); // splice in lo-word
-	for (;i<WBITS;++i,wk>>=1) PUTBIT(wnew[k],i,f[wk&BMASK]);
-}
-
-static inline void mw_filter_old(const size_t n, word_t* const wnew, const word_t* const w, const int B, const word_t* const f)
-{
-	const int WB = WBITS-B;
-	const int WE = WBITS+WB;
-	size_t k = 0; // no overlap
-	for (;k<n-1;++k) {
-		int i = 0;
-		for (;i<=WB;  ++i) PUTBIT(wnew[k],i,f[(w[k]<<(WB-i))>>WB]);
-		for (;i<WBITS;++i) PUTBIT(wnew[k],i,f[(w[k]>>i)|((w[k+1]<<(WE-i))>>WB)]);
-
-	}
-	int i = 0;
-	for (;i<=WB;  ++i) PUTBIT(wnew[k],i,f[(w[k]<<(WB-i))>>WB]);
-	for (;i<WBITS;++i) PUTBIT(wnew[k],i,f[(w[k]>>i)|((w[0]<<(WE-i))>>WB)]); // wrap lo-word
 }
 
 void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const word_t* const f);

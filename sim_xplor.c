@@ -146,6 +146,8 @@ int sim_xplor(int argc, char* argv[])
 		"d : (or DEL) delete CA/filter\n"
 		"j : (or left-arrow) previous CA/filter\n"
 		"k : (or right-arrow) next CA/filter\n"
+		"J : first CA/filter\n"
+		"K : last CA/filter\n"
 		"c : change CA/filter size\n"
 		"v : invert CA/filter\n"
 		"f : forward CA one screen\n"
@@ -259,51 +261,51 @@ int sim_xplor(int argc, char* argv[])
 		case 'N': // new user-supplied CA/filter
 
 			if (filtering) {
-				printf("enter filter id (rule size %d): ",fsiz); // prompt for ftid
+				printf("enter filter id: "); // prompt for ftid
 				fflush(stdout);
-				word_t* const ftab = rt_alloc(fsiz);
-				const int res = rt_read_id(fsiz,ftab);
+				word_t* const ftab = rt_read_id(&fsiz);
 				printf("filtering : ");
 				fflush(stdout);
-				if (res == 1) {
+				if (fsiz == -1) {
 					printf("input is wrong length\n");
-					free(ftab);
 					break;
 				}
-				if (res == 2) {
+				if (fsiz == -2) {
 					printf("input contains non-hex characters\n");
-					free(ftab);
 					break;
 				}
+				printf("filter rule size = %d\n",fsiz);
 				rule->filt = rtl_add(rule->filt,fsiz);
 				rt_copy(rule->size,rule->filt->tab,ftab);
 				free(ftab);
 				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
 				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
+				printf("filtering : ");
+				fflush(stdout);
 			}
 			else {
-				printf("enter CA id (rule size %d): ",rsiz); // prompt for rtid
+				printf("enter CA id: "); // prompt for rtid
 				fflush(stdout);
-				word_t* const rtab = rt_alloc(rsiz);
-				const int res = rt_read_id(rsiz,rtab);
+				word_t* const rtab = rt_read_id(&rsiz);
 				printf("exploring : ");
 				fflush(stdout);
-				if (res == 1) {
+				if (rsiz == -1) {
 					printf("input is wrong length\n");
-					free(rtab);
 					break;
 				}
-				if (res == 2) {
+				if (rsiz == -2) {
 					printf("input contains non-hex characters\n");
-					free(rtab);
 					break;
 				}
+				printf("CA rule size = %d\n",rsiz);
 				rule = rtl_add(rule,rsiz);
 				rt_copy(rule->size,rule->tab,rtab);
 				free(rtab);
 				mw_randomise(n,ca,&irng);
 				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
 				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
+				printf("exploring : ");
+				fflush(stdout);
 			}
 			print_id(rule,filtering);
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
@@ -403,6 +405,68 @@ int sim_xplor(int argc, char* argv[])
 			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
 			break;
 
+		case 'J': // back to first CA or filter in list
+
+			if (filtering) {
+				if (rule->filt == NULL) {
+					printf("first filter : no filter!\n");
+					break;
+				}
+				if (rule->filt->prev == NULL) {
+					printf("first filter : already at first!\n");
+					break;
+				}
+				printf("first filter : ");
+				while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // go to beginning of list
+				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
+			}
+			else {
+				if (rule->prev == NULL) {
+					printf("first CA : already at first!\n");
+					break;
+				}
+				printf("first CA : ");
+				while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
+				mw_randomise(n,ca,&irng);
+				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
+			}
+			print_id(rule,filtering);
+			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
+			break;
+
+		case 'K': // forward to last CA or filter in list
+
+			if (filtering) {
+				if (rule->filt == NULL) {
+					printf("last filter : no filter!\n");
+					break;
+				}
+				if (rule->filt->next == NULL) {
+					printf("last filter : already at last!\n");
+					break;
+				}
+				printf("last filter : ");
+				while (rule->filt->next != NULL) rule->filt = rule->filt->next; // go to end of list
+				ca_filter(I,n,fca,ca,rule->filt->size,rule->filt->tab);
+				ca_zpixmap_create(I,n,fca,imdata,ppc,imx,imy,filtering);
+			}
+			else {
+				if (rule->next == NULL) {
+					printf("last CA : already at last!\n");
+					break;
+				}
+				printf("last CA : ");
+				while (rule->next != NULL) rule = rule->next; // go to end of list
+				mw_randomise(n,ca,&irng);
+				ca_run(I,n,ca,wca,rule->size,rule->tab,uto);
+				ca_zpixmap_create(I,n,ca,imdata,ppc,imx,imy,filtering);
+			}
+			print_id(rule,filtering);
+			XPutImage(dis,win,gc,im,0,0,1,1,uimx,uimy);
+			break;
+
 		case 'c': // change CA/filter size (will apply to new CA/filter)
 
 			if (filtering) {
@@ -491,18 +555,17 @@ int sim_xplor(int argc, char* argv[])
 		case 's': // save CA/filter rule id to file
 
 			printf("saving CA ");
-			fprintf(ortfs,"%d ",rule->size);
 			rt_fprint_id(rule->size,rule->tab,ortfs);
 			if (filtering && rule->filt != NULL) {
 				printf("and filter rule ids\n");
-				fflush(stdout);
-				fprintf(ortfs," %d ",rule->filt->size);
+				fputc(' ',ortfs);
 				rt_fprint_id(rule->filt->size,rule->filt->tab,ortfs);
 			}
 			else {
 				printf("rule id\n");
 			}
 			fputc('\n',ortfs);
+			fflush(ortfs); // write to file
 			// no need to redisplay image
 			break;
 

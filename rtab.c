@@ -5,6 +5,28 @@
 /*              rule table (double-linked) list                         */
 /*********************************************************************/
 
+rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
+{
+	if (curr == NULL) { // empty list
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = NULL;
+		curr->prev = NULL;
+	}
+	else {
+		while (curr->next != NULL) curr = curr->next; // go to end of list
+		rtl_t* const oldcurr = curr;
+		curr = malloc(sizeof(rtl_t));
+		curr->prev = oldcurr;
+		curr->next = NULL;
+		oldcurr->next = curr;
+	}
+	curr->filt = NULL;
+	curr->size = size;
+	curr->tab = rt_alloc(size);
+	return curr;
+}
+/*
 rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
 {
 	if (curr == NULL) { // empty list
@@ -28,7 +50,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
 	curr->tab = rt_alloc(size);
 	return curr;
 }
-
+*/
 rtl_t* rtl_del(rtl_t* curr)
 {
 	if (curr == NULL) return NULL; // nothing to delete
@@ -66,7 +88,7 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 {
 	if (rule == NULL) return NULL;
 	const size_t S = POW2(size);
-	while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
 	while (rule != NULL) {
 		if (size == rule->size) {
 			if (mw_equal(S,tab,rule->tab)) return (rtl_t*)rule;
@@ -89,7 +111,6 @@ rtl_t* rtl_fread(FILE* rtfs)
 	char* line = NULL;
 	size_t len = 0;
 	int nlines = 0;
-	int res;
 	ssize_t ilen;
 	char delimit[]=" \t\r\n\v\f"; // POSIX whitespace characters
 
@@ -112,28 +133,16 @@ rtl_t* rtl_fread(FILE* rtfs)
 			continue;
 		}
 
-		int rsiz;
-		sscanf(token,"%d",&rsiz);
-		printf(" CA size = %d",rsiz);
+		printf(" CA id = %s",token);
 		fflush(stdout);
-		if (rsiz < 1) {
+		int rsiz;
+		word_t* const rtab = rt_sread_id(token,&rsiz);
+		if (rsiz == -1) {
 			printf(" - ERROR: bad size - skipped\n");
 			continue;
 		}
-
-		token = strtok(NULL,delimit);
-		printf(", CA id = %s",token);
-		fflush(stdout);
-		word_t* const rtab = rt_alloc(rsiz);
-		res = rt_sread_id(rsiz,rtab,token);
-		if (res == 1) {
-			printf(" - ERROR: id is wrong length - skipped\n");
-			free(rtab);
-			continue;
-		}
-		if (res == 2) {
+		if (rsiz == -2) {
 			printf(" - ERROR: id contains non-hex characters - skipped\n");
-			free(rtab);
 			continue;
 		}
 		rtl_t* rrule = rtl_find(rule,rsiz,rtab);
@@ -156,28 +165,16 @@ rtl_t* rtl_fread(FILE* rtfs)
 			continue;
 		}
 
-		int fsiz;
-		sscanf(token,"%d",&fsiz);
-		printf(" : filter size = %d",fsiz);
+		printf(", filter id = %s",token);
 		fflush(stdout);
-		if (fsiz < 1) {
+		int fsiz;
+		word_t* const ftab = rt_sread_id(token,&fsiz);
+		if (fsiz == -1) {
 			printf(" - ERROR: bad size - skipped\n");
 			continue;
 		}
-
-		token = strtok(NULL,delimit);
-		printf(", filter id = %s",token);
-		fflush(stdout);
-		word_t* const ftab = rt_alloc(fsiz);
-		res = rt_sread_id(fsiz,ftab,token);
-		if (res == 1) {
-			printf(" - ERROR: id is wrong length - skipped\n");
-			free(ftab);
-			continue;
-		}
-		if (res == 2) {
+		if (fsiz == -2) {
 			printf(" - ERROR: id contains non-hex characters - skipped\n");
-			free(ftab);
 			continue;
 		}
 		rtl_t* frule = rtl_find(rule->filt,fsiz,ftab);
@@ -205,7 +202,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 	free(line);
 
-	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
 
 	return rule;
 }
@@ -339,35 +336,41 @@ char* rt_sprint_id(const int size, const word_t* const tab) // allocates C strin
 	return str;
 }
 
-int rt_fread_id(const int size, word_t* const tab, FILE* const fstream)
+word_t* rt_fread_id(FILE* const fstream, int* const size)  // allocates rule table on sucess - remember to free!
 {
 	char* str = NULL;
 	size_t len = 0;
 	const ssize_t ilen = getline(&str,&len,fstream);
 	ASSERT(ilen != -1,"Read failed.");
 	str[ilen-1] = '\0'; // strip trailing newline
-	const int res = rt_sread_id(size,tab,str);
+	word_t* const tab = rt_sread_id(str,size);
 	free(str);
-	return res;
+	return tab;
 }
 
-int rt_read_id(const int size, word_t* const tab)
+word_t* rt_read_id(int* const size) // allocates rule table on sucess - remember to free!
 {
-	return rt_fread_id(size,tab,stdin);
+	return rt_fread_id(stdin,size);
 }
 
-int rt_sread_id(const int size, word_t* const tab, const char* const str)
+word_t* rt_sread_id(const char* const str, int* const size) // allocates rule table on sucess - remember to free!
 {
-	const size_t C = rt_hexchars(size);
 	const size_t len = strlen(str);
-	if (len != C) return 1; // failure - wrong number of chars (ignore newline at end)
+	*size = rt_hexsize(len);
+	if (*size == -1) return NULL; // failure - ID is bad size
 	size_t r = 0;
-	for (size_t c=0;c<C;++c) {
+	word_t* const tab = rt_alloc(*size);
+	const int nepc = *size == 1 ? 2 : 4; // number of table entries per char
+	for (size_t c=0;c<len;++c) {
 		const word_t u = hex2word(str[c]);
-		if (u == 999) return 2; // failure - non-hex chars
-		for (int i=0;i<4;++i) tab[r++] = BITON(u,i);
+		if (u == 999) {
+			free(tab);
+			*size = -2; // failure - non-hex chars
+			return NULL;
+		}
+		for (int i=0;i<nepc;++i) tab[r++] = BITON(u,i);
 	}
-	return 0; // success
+	return tab; // success
 }
 
 void rt_entro_hist(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
