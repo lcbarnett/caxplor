@@ -5,6 +5,28 @@
 /*              rule table (double-linked) list                         */
 /*********************************************************************/
 
+rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
+{
+	if (curr == NULL) { // empty list
+		curr = malloc(sizeof(rtl_t));
+		PASSERT(curr != NULL,"memory allocation failed");
+		curr->next = NULL;
+		curr->prev = NULL;
+	}
+	else {
+		while (curr->next != NULL) curr = curr->next; // go to end of list
+		rtl_t* const oldcurr = curr;
+		curr = malloc(sizeof(rtl_t));
+		curr->prev = oldcurr;
+		curr->next = NULL;
+		oldcurr->next = curr;
+	}
+	curr->filt = NULL;
+	curr->size = size;
+	curr->tab = rt_alloc(size);
+	return curr;
+}
+/*
 rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
 {
 	if (curr == NULL) { // empty list
@@ -28,7 +50,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
 	curr->tab = rt_alloc(size);
 	return curr;
 }
-
+*/
 rtl_t* rtl_del(rtl_t* curr)
 {
 	if (curr == NULL) return NULL; // nothing to delete
@@ -66,7 +88,7 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 {
 	if (rule == NULL) return NULL;
 	const size_t S = POW2(size);
-	while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
 	while (rule != NULL) {
 		if (size == rule->size) {
 			if (mw_equal(S,tab,rule->tab)) return (rtl_t*)rule;
@@ -180,7 +202,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 	free(line);
 
-	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // rewind to beginning of list
+	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
 
 	return rule;
 }

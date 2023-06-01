@@ -491,7 +491,6 @@ int sim_xplor(int argc, char* argv[])
 		case 's': // save CA/filter rule id to file
 
 			printf("saving CA ");
-			fprintf(ortfs,"%d ",rule->size);
 			rt_fprint_id(rule->size,rule->tab,ortfs);
 			if (filtering && rule->filt != NULL) {
 				printf("and filter rule ids\n");
