@@ -52,6 +52,12 @@ typedef uint64_t word_t;
 #define fnewline(fstream) fputc('\n',fstream)
 
 /*********************************************************************/
+/*                      miscellaneous                                */
+/*********************************************************************/
+
+void ft_tab(const size_t n, double* const costab, double* const sintab);
+
+/*********************************************************************/
 /*                      single-word                                  */
 /*********************************************************************/
 
@@ -119,6 +125,9 @@ void wd_printc   (const word_t w, const int W);
 void wd_fprintc  (const word_t w, const int W, FILE* const fstream);
 void wd_print_lo (const word_t w, const int b);
 void wd_fprint_lo(const word_t w, const int b, FILE* const fstream);
+
+void wd_dft(word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+//void wd_dft1(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
 
 /*********************************************************************/
 /*                      multi-word                                   */
