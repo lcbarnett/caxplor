@@ -276,6 +276,9 @@ void mw_prints     (const size_t n, const word_t* const w);
 void mw_fprint_bin (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_print_bin  (const size_t n, const word_t* const w);
 
+void mw_dft(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+void mw_dft_ref(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+
 /*********************************************************************/
 
 // printf binary macros

@@ -82,36 +82,17 @@ void wd_fprint_lo(const word_t w, const int b, FILE* const fstream)
 
 void wd_dft(word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
 {
-	for (int i=0;i<WBITS;++i) wdftre[i] = 0.0;
-	for (int i=0;i<WBITS;++i) wdftim[i] = 0.0;
+	for (size_t i=0;i<WBITS;++i) wdftre[i] = 0.0;
+	for (size_t i=0;i<WBITS;++i) wdftim[i] = 0.0;
 	for (int j=0;j<WBITS;++j) {
-		const double* ctabj = costab+WBITS*j;
-		const double* stabj = sintab+WBITS*j;
 		if (WONE&(w>>=1)) { // test i-th bit
+			const double* ctabj = costab+WBITS*j;
+			const double* stabj = sintab+WBITS*j;
 			for (int i=0;i<WBITS;++i) wdftre[i] += ctabj[i];
 			for (int i=0;i<WBITS;++i) wdftim[i] += stabj[i];
 		}
 	}
 }
-/*
-void wd_dft1(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
-{
-	for (int i=0;i<WBITS;++i) {
-		double wdftrei = 0.0;
-		for (int j=0;j<WBITS;++j) {
-			if BITON(w,j) wdftrei += costab[WBITS*i+j];
-		}
-		wdftre[i] = wdftrei;
-	}
-	for (int i=0;i<WBITS;++i) {
-		double wdftimi = 0.0;
-		for (int j=0;j<WBITS;++j) {
-			if BITON(w,j) wdftimi += sintab[WBITS*i+j];
-		}
-		wdftim[i] = -wdftimi;
-	}
-}
-*/
 
 /*********************************************************************/
 /*                      multi-word                                   */
@@ -191,6 +172,49 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 	if (2*J != I) { // odd number of iterations - one more to go
 		mw_filter(n,ww,w,B,f);
 		mw_copy(n,w,ww);
+	}
+}
+
+
+void mw_dft(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+{
+	const size_t m = n*WBITS;
+	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;
+	for (size_t i=0;i<m;++i) wdftim[i] = 0.0;
+	for (size_t l=0;l<n;++l) {
+		word_t wl = w[l];
+		for (int j=0;j<WBITS;++j) {
+			if (WONE&(wl>>=1)) {
+				const double* costabj = costab+(l*WBITS+(size_t)j)*m;
+				const double* sintabj = sintab+(l*WBITS+(size_t)j)*m;
+				for (size_t k=0;k<n;++k) {
+					const double* costabjk = costabj+k*WBITS;
+					const double* sintabjk = sintabj+k*WBITS;
+					double* const wdftrek  = wdftre+k*WBITS;
+					double* const wdftimk  = wdftim+k*WBITS;
+					for (int i=0;i<WBITS;++i) wdftrek[i] += costabjk[i];
+					for (int i=0;i<WBITS;++i) wdftimk[i] -= sintabjk[i];
+				}
+			}
+		}
+	}
+}
+
+void mw_dft_ref(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+{
+	const size_t m = n*WBITS;
+	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;
+	for (size_t i=0;i<m;++i) wdftim[i] = 0.0;
+	for (size_t l=0;l<n;++l) {
+		word_t wl = w[l];
+		for (int j=0;j<WBITS;++j) {
+			if (WONE&(wl>>=1)) {
+				for (size_t k=0;k<n;++k) {
+					for (int i=0;i<WBITS;++i) wdftre[k*WBITS+(size_t)i] += costab[(l*WBITS+(size_t)j)*m+k*WBITS+(size_t)i];
+					for (int i=0;i<WBITS;++i) wdftim[k*WBITS+(size_t)i] -= sintab[(l*WBITS+(size_t)j)*m+k*WBITS+(size_t)i];
+				}
+			}
+		}
 	}
 }
 
