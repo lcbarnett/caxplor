@@ -13,20 +13,18 @@ void ft_tab(const size_t n, double* const costab, double* const sintab)
 	for (size_t i=0; i<n; ++i) {
 		double* const ctni = costab+n*i;
 		double* const stni = sintab+n*i;
-		for (size_t j=i; j<n; ++j) {
-			sincos(fac*(double)(i*j),stni+j,ctni+j);
-		}
+		for (size_t j=i; j<n; ++j) sincos(fac*(double)(i*j),stni+j,ctni+j);
 	}
 	// symmetrise across diagonal
 	for (size_t i=0; i<n; ++i) {
 		double* const cti  = costab+i;
-		double* const sti  = sintab+i;
 		double* const ctni = costab+n*i;
+		for (size_t j=i+1; j<n; ++j) *(cti+n*j) = *(ctni+j);
+	}
+	for (size_t i=0; i<n; ++i) {
+		double* const sti  = sintab+i;
 		double* const stni = sintab+n*i;
-		for (size_t j=i+1; j<n; ++j) {
-			*(cti+n*j) = *(ctni+j);
-			*(sti+n*j) = *(stni+j);
-		}
+		for (size_t j=i+1; j<n; ++j) *(sti+n*j) = *(stni+j);
 	}
 }
 
@@ -80,15 +78,22 @@ void wd_fprint_lo(const word_t w, const int b, FILE* const fstream)
 	for (word_t m=(WONE<<(b-1));m!=0;m>>=1) fputc(NZWORD(w&m)?'1':'0',fstream);
 }
 
-void wd_dft(word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
 {
+	word_t wtest;
+	wtest = w;
 	for (size_t i=0;i<WBITS;++i) wdftre[i] = 0.0;
+	for (int j=0;j<WBITS;++j) {
+		if (WONE&(wtest>>=1)) { // test j-th bit
+			const double* ctabj = costab+WBITS*j;
+			for (int i=0;i<WBITS;++i) wdftre[i] += ctabj[i];
+		}
+	}
+	wtest = w;
 	for (size_t i=0;i<WBITS;++i) wdftim[i] = 0.0;
 	for (int j=0;j<WBITS;++j) {
-		if (WONE&(w>>=1)) { // test i-th bit
-			const double* ctabj = costab+WBITS*j;
+		if (WONE&(wtest>>=1)) { // test j-th bit
 			const double* stabj = sintab+WBITS*j;
-			for (int i=0;i<WBITS;++i) wdftre[i] += ctabj[i];
 			for (int i=0;i<WBITS;++i) wdftim[i] += stabj[i];
 		}
 	}
@@ -100,7 +105,7 @@ void wd_dft(word_t w, double* const wdftre, double* const wdftim, const double* 
 
 word_t* mw_alloc(const size_t n)
 {
-	word_t* const w =  calloc(n,sizeof(word_t)); // note: calloc zero-initialises - this is s Good Thing
+	word_t* const w =  calloc(n,sizeof(word_t)); // note: calloc zero-initialises - this is a Good Thing
 	PASSERT(w != NULL,"memory allocation failed");
 	return w;
 
@@ -175,8 +180,7 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 	}
 }
 
-
-void mw_dft(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
 {
 	const size_t m = n*WBITS;
 	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;
@@ -200,7 +204,7 @@ void mw_dft(const size_t n, word_t* const w, double* const wdftre, double* const
 	}
 }
 
-void mw_dft_ref(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+void mw_dft_ref(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
 {
 	const size_t m = n*WBITS;
 	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;

@@ -126,8 +126,7 @@ void wd_fprintc  (const word_t w, const int W, FILE* const fstream);
 void wd_print_lo (const word_t w, const int b);
 void wd_fprint_lo(const word_t w, const int b, FILE* const fstream);
 
-void wd_dft(word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
-//void wd_dft1(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
 
 /*********************************************************************/
 /*                      multi-word                                   */
@@ -276,8 +275,8 @@ void mw_prints     (const size_t n, const word_t* const w);
 void mw_fprint_bin (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_print_bin  (const size_t n, const word_t* const w);
 
-void mw_dft(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
-void mw_dft_ref(const size_t n, word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+void mw_dft_ref(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
 
 /*********************************************************************/
 
