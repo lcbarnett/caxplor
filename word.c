@@ -81,19 +81,19 @@ void wd_fprint_lo(const word_t w, const int b, FILE* const fstream)
 void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
 {
 	word_t wtest;
-	wtest = w;
 	for (size_t i=0;i<WBITS;++i) wdftre[i] = 0.0;
+	wtest = w;
 	for (int j=0;j<WBITS;++j) {
 		if (WONE&(wtest>>=1)) { // test j-th bit
-			const double* ctabj = costab+WBITS*j;
+			const double* const ctabj = costab+WBITS*j;
 			for (int i=0;i<WBITS;++i) wdftre[i] += ctabj[i];
 		}
 	}
-	wtest = w;
 	for (size_t i=0;i<WBITS;++i) wdftim[i] = 0.0;
+	wtest = w;
 	for (int j=0;j<WBITS;++j) {
 		if (WONE&(wtest>>=1)) { // test j-th bit
-			const double* stabj = sintab+WBITS*j;
+			const double* const stabj = sintab+WBITS*j;
 			for (int i=0;i<WBITS;++i) wdftim[i] += stabj[i];
 		}
 	}
@@ -189,13 +189,13 @@ void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double*
 		word_t wl = w[l];
 		for (int j=0;j<WBITS;++j) {
 			if (WONE&(wl>>=1)) {
-				const double* costabj = costab+(l*WBITS+(size_t)j)*m;
-				const double* sintabj = sintab+(l*WBITS+(size_t)j)*m;
+				const double* const costabj = costab+(l*WBITS+(size_t)j)*m;
+				const double* const sintabj = sintab+(l*WBITS+(size_t)j)*m;
 				for (size_t k=0;k<n;++k) {
-					const double* costabjk = costabj+k*WBITS;
-					const double* sintabjk = sintabj+k*WBITS;
-					double* const wdftrek  = wdftre+k*WBITS;
-					double* const wdftimk  = wdftim+k*WBITS;
+					const double* const costabjk = costabj+k*WBITS;
+					const double* const sintabjk = sintabj+k*WBITS;
+					double* const wdftrek = wdftre+k*WBITS;
+					double* const wdftimk = wdftim+k*WBITS;
 					for (int i=0;i<WBITS;++i) wdftrek[i] += costabjk[i];
 					for (int i=0;i<WBITS;++i) wdftimk[i] -= sintabjk[i];
 				}
