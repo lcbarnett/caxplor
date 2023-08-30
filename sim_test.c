@@ -18,16 +18,8 @@ int sim_test(int argc, char* argv[])
 
 	const size_t m = WBITS*n;
 
-	double* const costab = calloc(m*m,sizeof(double));
-	double* const sintab = calloc(m*m,sizeof(double));
-
-	ft_tab(m,costab,sintab);
-
-	for (size_t i=0; i<m; ++i) {
-		for (size_t j=0; j<m; ++j) {
-			if (costab[m*i+j] != costab[m*j+i]) printf("eek! i = %zu, j = %zu\n",i,j);
-		}
-	}
+	double* const costab = dft_costab_alloc(m);
+	double* const sintab = dft_sintab_alloc(m);
 
 	mt_t rng;
 	mt_seed(&rng,seed);

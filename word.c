@@ -4,31 +4,6 @@
 #include "utils.h"
 
 /*********************************************************************/
-/*                      miscellaneous                                */
-/*********************************************************************/
-
-void ft_tab(const size_t n, double* const costab, double* const sintab)
-{
-	const double fac = (2.0*M_PI)/(double)n;
-	for (size_t i=0; i<n; ++i) {
-		double* const ctni = costab+n*i;
-		double* const stni = sintab+n*i;
-		for (size_t j=i; j<n; ++j) sincos(fac*(double)(i*j),stni+j,ctni+j);
-	}
-	// symmetrise across diagonal
-	for (size_t i=0; i<n; ++i) {
-		double* const cti  = costab+i;
-		double* const ctni = costab+n*i;
-		for (size_t j=i+1; j<n; ++j) *(cti+n*j) = *(ctni+j);
-	}
-	for (size_t i=0; i<n; ++i) {
-		double* const sti  = sintab+i;
-		double* const stni = sintab+n*i;
-		for (size_t j=i+1; j<n; ++j) *(sti+n*j) = *(stni+j);
-	}
-}
-
-/*********************************************************************/
 /*                      single-word                                  */
 /*********************************************************************/
 

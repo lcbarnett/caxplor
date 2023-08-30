@@ -12,6 +12,40 @@ double entro2(const size_t n, const double* const x)
 	return -y;
 }
 
+double* dft_costab_alloc(const size_t n)
+{
+	double* const costab = calloc(n*n,sizeof(double));
+	const double fac = (2.0*M_PI)/(double)n;
+	for (size_t i=0; i<n; ++i) {
+		double* const ctni = costab+n*i;
+		for (size_t j=i; j<n; ++j) ctni[j] = cos(fac*(double)(i*j));
+	}
+	// symmetrise across diagonal
+	for (size_t i=0; i<n; ++i) {
+		double* const cti  = costab+i;
+		double* const ctni = costab+n*i;
+		for (size_t j=i+1; j<n; ++j) cti[n*j] = ctni[j];
+	}
+	return costab;
+}
+
+double* dft_sintab_alloc(const size_t n)
+{
+	double* const sintab = calloc(n*n,sizeof(double));
+	const double fac = (2.0*M_PI)/(double)n;
+	for (size_t i=0; i<n; ++i) {
+		double* const stni = sintab+n*i;
+		for (size_t j=i; j<n; ++j) stni[j] = sin(fac*(double)(i*j));
+	}
+	// symmetrise across diagonal
+	for (size_t i=0; i<n; ++i) {
+		double* const sti  = sintab+i;
+		double* const stni = sintab+n*i;
+		for (size_t j=i+1; j<n; ++j) sti[n*j] = stni[j];
+	}
+	return sintab;
+}
+
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
