@@ -74,6 +74,15 @@ void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const do
 	}
 }
 
+void wd_autocov(const word_t w, double* const wac)
+{
+	for (int i=0;i<WBITS;++i) {
+		word_t iwaci = 0;
+		for (int j=0;j<WBITS-i;++j) iwaci += BITON(w,j+i)&BITON(w,j);
+		wac[i] = (double)iwaci;
+	}
+}
+
 /*********************************************************************/
 /*                      multi-word                                   */
 /*********************************************************************/
@@ -197,4 +206,18 @@ void mw_dft_ref(const size_t n, const word_t* const w, double* const wdftre, dou
 	}
 }
 
+/*
+void mw_autocov(const size_t n, const word_t* const w, double* const wac)
+{
+	for (size_t k=0;k<n;++k) {
+		for (int i=0;i<WBITS;++i) {
+			word_t iwacki = 0;
+			for (size_t l=0;l<n-k;++l) {
+				for (int j=0;j<WBITS;++j) iwacki += BITON(w,j+i)&BITON(w,j);
+			}
+			wac[i] = (double)iwaci;
+		}
+	}
+}
+*/
 /*********************************************************************/

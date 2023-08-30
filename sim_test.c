@@ -16,13 +16,32 @@ int sim_test(int argc, char* argv[])
 	CLAP_CARG(disp,    int,     1,            "display result?");
 	puts("---------------------------------------------------------------------------------------\n");
 
+	mt_t rng;
+	mt_seed(&rng,seed);
+/*
+	double* const wac1 = calloc(WBITS,sizeof(double));
+	double* const wac2 = calloc(WBITS,sizeof(double));
+
+	word_t w = wd_randomise(&rng);
+
+	wd_autocov_ref(w,wac1);
+	wd_autocov    (w,wac2);
+
+	for (size_t i=0; i<WBITS; ++i) {
+		printf("%12.0f  %12.0f",wac1[i],wac2[i]);
+		if (wac1[i] != wac2[i]) printf("    ***");
+		putchar('\n');
+	}
+
+	free(wac2);
+	free(wac1);
+*/
+/*
 	const size_t m = WBITS*n;
 
 	double* const costab = dft_costab_alloc(m);
 	double* const sintab = dft_sintab_alloc(m);
 
-	mt_t rng;
-	mt_seed(&rng,seed);
 	word_t* const w = mw_alloc(n);
 	mw_randomise(n,w,&rng);
 
@@ -74,6 +93,6 @@ int sim_test(int argc, char* argv[])
 	free(w);
 	free(sintab);
 	free(costab);
-
+*/
 	return EXIT_SUCCESS;
 }

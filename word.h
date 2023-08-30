@@ -122,6 +122,8 @@ void wd_fprint_lo(const word_t w, const int b, FILE* const fstream);
 
 void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
 
+void wd_autocov(const word_t w, double* const wac);
+
 /*********************************************************************/
 /*                      multi-word                                   */
 /*********************************************************************/
