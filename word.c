@@ -76,9 +76,12 @@ void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const do
 
 void wd_autocov(const word_t w, double* const wac)
 {
+	// note: reflect around WBITS/2
 	for (int i=0;i<WBITS;++i) {
 		word_t iwaci = 0;
-		for (int j=0;j<WBITS-i;++j) iwaci += BITON(w,j+i)&BITON(w,j);
+		int j = 0;
+		for (;j<WBITS-i;++j) iwaci += BITON(w,j+i      )&BITON(w,j);
+		for (;j<WBITS  ;++j) iwaci += BITON(w,j+i-WBITS)&BITON(w,j); // wrap
 		wac[i] = (double)iwaci;
 	}
 }
@@ -188,36 +191,27 @@ void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double*
 	}
 }
 
-void mw_dft_ref(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 {
-	const size_t m = n*WBITS;
-	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;
-	for (size_t i=0;i<m;++i) wdftim[i] = 0.0;
-	for (size_t l=0;l<n;++l) {
-		word_t wl = w[l];
-		for (int j=0;j<WBITS;++j) {
-			if (WONE&(wl>>=1)) {
-				for (size_t k=0;k<n;++k) {
-					for (int i=0;i<WBITS;++i) wdftre[k*WBITS+(size_t)i] += costab[(l*WBITS+(size_t)j)*m+k*WBITS+(size_t)i];
-					for (int i=0;i<WBITS;++i) wdftim[k*WBITS+(size_t)i] -= sintab[(l*WBITS+(size_t)j)*m+k*WBITS+(size_t)i];
+	size_t idx = 0;
+	for (size_t ii=0;ii<n;++ii) {
+		for (int i=0;i<WBITS;++i,++idx) {
+			word_t aci = 0;
+			size_t jii = ii;
+			int    ji  = i;
+			for (size_t jj=0;jj<n;++jj) {
+				for (int j=0;j<WBITS;++j) {
+					aci += BITON(w[jj],j)&BITON(w[jii],ji);
+					if (++ji == WBITS) {
+						if (++jii == n) jii = 0; // wrap word
+						ji = 0;
+					}
 				}
 			}
+			ac[idx] = (double)aci;
 		}
 	}
 }
+// if (idx == 0) fprintf(stderr,"jj = %zu, j = %2d   jii = %zu, ji = %2d (ii = %zu, i = %2d)\n",jj,j,jii,ji,ii,i);
 
-/*
-void mw_autocov(const size_t n, const word_t* const w, double* const wac)
-{
-	for (size_t k=0;k<n;++k) {
-		for (int i=0;i<WBITS;++i) {
-			word_t iwacki = 0;
-			for (size_t l=0;l<n-k;++l) {
-				for (int j=0;j<WBITS;++j) iwacki += BITON(w,j+i)&BITON(w,j);
-			}
-			wac[i] = (double)iwaci;
-		}
-	}
-}
-*/
 /*********************************************************************/

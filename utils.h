@@ -20,6 +20,8 @@ double entro2(const size_t n, const double* const x);
 double* dft_costab_alloc(const size_t n);
 double* dft_sintab_alloc(const size_t n);
 
+void dps(const size_t n, double* const s, const double* const ac, const double* const costab);
+
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
 /*********************************************************************/

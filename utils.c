@@ -46,6 +46,18 @@ double* dft_sintab_alloc(const size_t n)
 	return sintab;
 }
 
+void dps(const size_t n, double* const s, const double* const ac, const double* const costab)
+{
+	//const double ac0 = ac[0];
+	for (size_t k=0; k<n; ++k) {
+		const size_t nk = n*k;
+		double sk = 0.0;
+		for (size_t j=0; j<n; ++j) sk += ac[j]*costab[nk+j];
+		//s[k] = 2.0*sk-ac0;
+		s[k] = sk;
+	}
+}
+
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
