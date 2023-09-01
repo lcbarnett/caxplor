@@ -285,7 +285,7 @@ void mw_prints     (const size_t n, const word_t* const w);
 void mw_fprint_bin (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_print_bin  (const size_t n, const word_t* const w);
 
-void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab);
+void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dsp, const double* const costab);
 
 void mw_autocov(const size_t n, const word_t* const w, double* const ac);
 

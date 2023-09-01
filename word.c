@@ -167,28 +167,27 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 	}
 }
 
-void mw_dft(const size_t n, const word_t* const w, double* const wdftre, double* const wdftim, const double* const costab, const double* const sintab)
+void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
-	for (size_t i=0;i<m;++i) wdftre[i] = 0.0;
-	for (size_t i=0;i<m;++i) wdftim[i] = 0.0;
-	for (size_t l=0;l<n;++l) {
-		word_t wl = w[l];
-		for (int j=0;j<WBITS;++j) {
-			if (WONE&(wl>>=1)) {
-				const double* const costabj = costab+(l*WBITS+(size_t)j)*m;
-				const double* const sintabj = sintab+(l*WBITS+(size_t)j)*m;
-				for (size_t k=0;k<n;++k) {
-					const double* const costabjk = costabj+k*WBITS;
-					const double* const sintabjk = sintabj+k*WBITS;
-					double* const wdftrek = wdftre+k*WBITS;
-					double* const wdftimk = wdftim+k*WBITS;
-					for (int i=0;i<WBITS;++i) wdftrek[i] += costabjk[i];
-					for (int i=0;i<WBITS;++i) wdftimk[i] -= sintabjk[i];
+	const double* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
+	for (size_t i=0;i<m;++i) dftre[i] = 0.0;
+	for (size_t i=0;i<m;++i) dftim[i] = 0.0;
+	for (size_t jj=0,jdx=0;jj<n;++jj) {
+		word_t wjj = w[jj];
+		for (int j=0;j<WBITS;++j,++jdx,wjj>>=1) {
+			if (WONE&wjj) {
+				size_t ijdx = m*jdx;
+				for (size_t ii=0,idx=0;ii<n;++ii) {
+					for (int i=0;i<WBITS;++i,++idx,++ijdx) {
+						dftre[idx] += costab[ijdx];
+						dftim[idx] -= sintab[ijdx];
+					}
 				}
 			}
 		}
 	}
+	if (dps != NULL) sqmag(m,dps,dftre,dftim); // calculate discrete power spectrum
 }
 
 void mw_autocov(const size_t n, const word_t* const w, double* const ac)
@@ -212,6 +211,5 @@ void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 		}
 	}
 }
-// if (idx == 0) fprintf(stderr,"jj = %zu, j = %2d   jii = %zu, ji = %2d (ii = %zu, i = %2d)\n",jj,j,jii,ji,ii,i);
 
 /*********************************************************************/

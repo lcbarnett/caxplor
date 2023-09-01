@@ -95,16 +95,15 @@ void ca_part_count(const size_t I, const size_t n, const word_t* const ca, const
 	free(wcgrain);
 }
 
-void ca_dpspec(const size_t I, const size_t n, const word_t* const ca, double* const dpspec, const double* const costab, const double* const sintab)
+void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab, const double* const sintab)
 {
 	const size_t m = WBITS*n;
 	double* const dftre = calloc(m,sizeof(double));
 	double* const dftim = calloc(m,sizeof(double));
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const dpspecr = dpspec+m*row;
-		mw_dft(n,car,dftre,dftim,costab,sintab);
-		for (size_t i=0; i<m; ++i) dpspecr[i] = dftre[i]*dftre[i]+dftim[i]*dftim[i];
+		double* const dpsr = dps+m*row;
+		mw_dft(n,car,dftre,dftim,dpsr,costab);
 	}
 	free(dftim);
 	free(dftre);

@@ -24,7 +24,7 @@ void    ca_filter      (const size_t I, const size_t n, word_t* const ca, const 
 
 void    ca_run         (const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto);
 
-void    ca_dpspec      (const size_t I, const size_t n, const word_t* const ca, double* const dpspec, const double* const costab, const double* const sintab);
+void    ca_dps         (const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab, const double* const sintab);
 
 /*********************************************************************/
 /*                      bitmap stuff                                 */

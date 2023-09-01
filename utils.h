@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
+#include <time.h>
 
 // entropy stuff
 
@@ -17,10 +18,31 @@ double entro2(const size_t n, const double* const x);
 
 // cosine and sin tables for DFT - remember to free return!
 
-double* dft_costab_alloc(const size_t n);
-double* dft_sintab_alloc(const size_t n);
+double* dft_cstab_alloc (const size_t n);
 
-void dps(const size_t n, double* const s, const double* const ac, const double* const costab);
+void ac2dps(const size_t n, double* const s, const double* const ac, const double* const costab);
+
+// misc stuff
+
+static inline double maxabdiff(const size_t n, const double* const x, const double* const y)
+{
+	double d = 0.0;
+	for (size_t i=0;i<n;++i) {
+		const double di = fabs(x[i]-y[i]);
+		if (di > d) d = di;
+	}
+	return d;
+}
+
+static inline void sqmag(const size_t n, double* const a, const double* const x, const double* const y)
+{
+	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];
+}
+
+static inline double timer()
+{
+	return (double)clock()/(double)CLOCKS_PER_SEC;
+}
 
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
