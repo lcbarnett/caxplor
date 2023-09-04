@@ -95,14 +95,15 @@ int sim_test(int argc, char* argv[])
 	if (disp) {
 		const double nfac = logs ? 1.0 : 1.0/(double)m;
 		const double ffac = (2.0*M_PI)/(double)m;
-		FILE* gp = gp_popen(NULL,NULL);
+		FILE* gp = gp_popen(NULL,"wxt size 640,960 nobackground enhanced title 'CA Explorer Test' persist raise");
+		fprintf(gp,"set xr [0.0:%g]\n",2.0*M_PI);
+		fprintf(gp,"set xtics ('0' 0.0,'{/Symbol p}/2' %g,'{/Symbol p}' %g,'3{/Symbol p}/2' %g,'2{/Symbol p}' %g)\n",M_PI/2.0,M_PI,3.0*M_PI/2.0,2*M_PI);
+		fprintf(gp,"set grid lt -1 lc \"grey\"\n");
+		fprintf(gp,"set multiplot layout 2,1\n");
 		fprintf(gp,"set title \"Spatial Discrete Power Spectrum\"\n");
 		fprintf(gp,"set xlabel \"frequency\"\n");
 		fprintf(gp,"set ylabel \"DPS\"\n");
-		fprintf(gp,"set xr [0.0:%g]\n",2.0*M_PI);
-		fprintf(gp,"set xtics ('0' 0.0,'{/Symbol p}/2' %g,'{/Symbol p}' %g,'3{/Symbol p}/2' %g,'2{/Symbol p}' %g)\n",M_PI/2.0,M_PI,3.0*M_PI/2.0,2*M_PI);
 		if (logs) fprintf(gp,"set logs y\n"); else fprintf(gp,"set yr [0:*]\n");
-		fprintf(gp,"set grid lt -1 lc \"grey\"\n");
 		fprintf(gp,"plot \"-\" using 1:2 w lines t \"ft\",  \"-\" using 1:2 w lines t \"ac\"\n");
 		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,nfac*ftdps[i]);
 		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*ftdps[0]);
@@ -110,6 +111,15 @@ int sim_test(int argc, char* argv[])
 		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,nfac*acdps[i]);
 		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*acdps[0]);
 		fprintf(gp,"e\n");
+		fprintf(gp,"set title \"Spatial autocorrelation\"\n");
+		fprintf(gp,"set xlabel \"correlation length\"\n");
+		fprintf(gp,"set ylabel \"autocorrelation\"\n");
+		fprintf(gp,"set yr [*:*]\n");
+		fprintf(gp,"plot \"-\" using 1:2 w lines not\n");
+		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,acov[i]/acov[0]);
+		fprintf(gp,"%g %g\n",ffac*(double)m,1.0);
+		fprintf(gp,"e\n");
+		fprintf(gp,"unset multiplot\n");
 		gp_pclose(gp);
 	}
 

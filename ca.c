@@ -141,13 +141,25 @@ gdImagePtr ca_image_create(
 	// if no CA, return an empty image
 	if (ca == NULL) return im;
 
-	// draw a rectangle at each on cell (reverse x direction, so left -> right is hi -> lo)
-	const int revx = imx-ppc+1;
 	const word_t* w = ca;
-	for (int y=0; y<imy; y += ppc) { // for each row
-		for (int x=0; x<imx;++w) { // for each word
-			for (word_t b=0; b<WBITS; ++b, x += ppc) { // for each bit in word
-				if (BITON(*w,b)) gdImageFilledRectangle(im,revx-x,y+1,imx-x,y+ppc,col1);
+	if (ppc == 1) {
+		// draw a pixel at each on cell (reverse x direction, so left -> right is hi -> lo)
+		for (int y=0; y<imy; ++y) { // for each row
+			for (int x=0; x<imx; ++w) { // for each word
+				for (word_t b=0; b<WBITS; ++b, ++x) { // for each bit in word
+					if (BITON(*w,b)) gdImageSetPixel(im,imx-x,y+1,col1);
+				}
+			}
+		}
+	}
+	else {
+		// draw a rectangle at each on cell (reverse x direction, so left -> right is hi -> lo)
+		const int revx = imx-ppc+1;
+		for (int y=0; y<imy; y += ppc) { // for each row
+			for (int x=0; x<imx; ++w) { // for each word
+				for (word_t b=0; b<WBITS; ++b, x += ppc) { // for each bit in word
+					if (BITON(*w,b)) gdImageFilledRectangle(im,revx-x,y+1,imx-x,y+ppc,col1);
+				}
 			}
 		}
 	}
