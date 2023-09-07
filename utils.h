@@ -24,11 +24,41 @@ void ac2dps(const size_t n, double* const s, const double* const ac, const doubl
 
 // misc stuff
 
+static inline double maxabs(const size_t n, const double* const x)
+{
+	double d = 0.0;
+	for (size_t i=0;i<n;++i) {
+		const double di = fabs(x[i]);
+		if (di > d) d = di;
+	}
+	return d;
+}
+
+static inline double maxabsf(const size_t n, const float* const x)
+{
+	float d = 0.0;
+	for (size_t i=0;i<n;++i) {
+		const float di = fabsf(x[i]);
+		if (di > d) d = di;
+	}
+	return d;
+}
+
 static inline double maxabdiff(const size_t n, const double* const x, const double* const y)
 {
 	double d = 0.0;
 	for (size_t i=0;i<n;++i) {
 		const double di = fabs(x[i]-y[i]);
+		if (di > d) d = di;
+	}
+	return d;
+}
+
+static inline float maxabdiffd(const size_t n, const float* const x, const float* const y)
+{
+	float d = 0.0;
+	for (size_t i=0;i<n;++i) {
+		const float di = fabsf(x[i]-y[i]);
 		if (di > d) d = di;
 	}
 	return d;

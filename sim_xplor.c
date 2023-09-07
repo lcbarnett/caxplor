@@ -7,18 +7,7 @@
 #include "clap.h"
 #include "strman.h"
 
-void print_id(const rtl_t* const rule, const int filtering)
-{
-	printf("CA id = ");
-	rt_print_id(rule->size,rule->tab);
-	printf(", lambda = %6.4f",rt_lambda(rule->size,rule->tab));
-	if (rule->filt != NULL && filtering) {
-		printf(" : filter id = ");
-		rt_print_id(rule->filt->size,rule->filt->tab);
-		printf(", lambda = %6.4f",rt_lambda(rule->filt->size,rule->filt->tab));
-	}
-	putchar('\n');
-}
+void print_id(const rtl_t* const rule, const int filtering);
 
 // Main "CA Explorer" simulation
 
@@ -30,6 +19,7 @@ int sim_xplor(int argc, char* argv[])
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
 	CLAP_CARG(nwords,  size_t,  0,            "number of words (or 0 for automatic)");
+	CLAP_VARG(nrows,   size_t,  0,            "number of rows (or 0 for automatic)");
 	CLAP_VARG(rsiz,    int,     5,            "CA rule size");
 	CLAP_VARG(rlam,    double,  0.6,          "CA rule lambda");
 	CLAP_CARG(rseed,   ulong,   0,            "CA rule random seed (or 0 for unpredictable)");
@@ -62,11 +52,11 @@ int sim_xplor(int argc, char* argv[])
 
 	// get number of CA rows/cols/words to fit screen
 
-	size_t nrows, ncols, nrwords;
-	get_ca_dims(ppc,gpx,gpy,&nrows,&ncols,&nrwords,1);
+	size_t nr, ncols, nrwords;
+	get_ca_dims(ppc,gpx,gpy,&nr,&ncols,&nrwords,1);
 
 	const size_t n = (nwords == 0 ? nrwords : nwords);
-	const size_t I = nrows;
+	const size_t I = (nrows  == 0 ? nr      : nrows);
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -157,6 +147,7 @@ int sim_xplor(int argc, char* argv[])
 		"p : calculate CA period\n"
 		"s : save CA/filter id to file\n"
 		"w : write CA image to file\n"
+		"S : calculate CA spatial discrete power spectrum\n"
 		"q : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
@@ -689,6 +680,38 @@ int sim_xplor(int argc, char* argv[])
 			// no need to redisplay image
 			break;
 
+		case 'S': // calculate CA spatial discrete power spectrum
+
+			printf("calculating CA spectrum... "); fflush(stdout);
+			const size_t m = n*WBITS;
+			double* const costab = dft_cstab_alloc(m);
+			double* const dps = malloc(I*m*sizeof(double));
+			ca_dps(I,n,ca,dps,costab);
+
+			float* const fdps = malloc(I*m*sizeof(float));
+			for (size_t i=0;i<I;++i) {
+				fdps[m*i] = 0.0f/0.0f;
+				for (size_t j=1; j<=m;++j) {
+					const size_t k = m*i+j;
+					fdps[k] = (float)(dps[k]/(double)m);
+				}
+			}
+
+			FILE* gp = gp_popen(NULL,NULL);
+			fprintf(gp,"set size ratio -1\n");
+			fprintf(gp,"set xr [-0.5:%g]\n",(double)m/2+0.5);
+			fprintf(gp,"set yr [-0.5:%g]\n",(double)I-0.5);
+			fprintf(gp,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
+			fwrite(fdps,sizeof(float),m*I,gp);
+			if (pclose(gp) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+
+			printf("done\n");
+			free(fdps);
+			free(dps);
+			free(costab);
+			// no need to redisplay image
+			break;
+
 		case 'h': // display usage
 
 			printf("help\n\n%s\n",usagestr);
@@ -726,4 +749,17 @@ int sim_xplor(int argc, char* argv[])
 	free(ca);
 
 	return EXIT_SUCCESS;
+}
+
+void print_id(const rtl_t* const rule, const int filtering)
+{
+	printf("CA id = ");
+	rt_print_id(rule->size,rule->tab);
+	printf(", lambda = %6.4f",rt_lambda(rule->size,rule->tab));
+	if (rule->filt != NULL && filtering) {
+		printf(" : filter id = ");
+		rt_print_id(rule->filt->size,rule->filt->tab);
+		printf(", lambda = %6.4f",rt_lambda(rule->filt->size,rule->filt->tab));
+	}
+	putchar('\n');
 }
