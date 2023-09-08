@@ -687,30 +687,26 @@ int sim_xplor(int argc, char* argv[])
 		case 'S': // calculate CA spatial discrete power spectrum
 
 			printf("calculating CA spectrum... "); fflush(stdout);
-			const size_t m = n*WBITS;
+			const size_t m  = n*WBITS;
 			float* const costab = dft_cstab_alloc(m);
 			float* const dps = malloc(I*m*sizeof(double));
 			ca_dps(I,n,ca,dps,costab);
 
-			float* const fdps = malloc(I*m*sizeof(float));
-			for (size_t i=0;i<I;++i) {
-				fdps[m*i] = 0.0f/0.0f;
-				for (size_t j=1; j<=m;++j) {
-					const size_t k = m*i+j;
-					fdps[k] = (dps[k]/(float)m);
-				}
-			}
+			const float  mf = (float)m;
+			for (size_t i=0;i<m;++i) dps[i]  /= mf;  // scale by width
+			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
 
 			FILE* gp = gp_popen(NULL,NULL);
 			fprintf(gp,"set size ratio -1\n");
-			fprintf(gp,"set xr [-0.5:%g]\n",(float)(m/2)+0.5f);
+			fprintf(gp,"unset xtics\n");
+			fprintf(gp,"unset ytics\n");
+			fprintf(gp,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
 			fprintf(gp,"set yr [-0.5:%g]\n",(float)I-0.5f);
 			fprintf(gp,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			fwrite(fdps,sizeof(float),m*I,gp);
+			fwrite(dps,sizeof(float),m*I,gp);
 			if (pclose(gp) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 
 			printf("done\n");
-			free(fdps);
 			free(dps);
 			free(costab);
 			// no need to redisplay image

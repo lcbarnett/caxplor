@@ -26,7 +26,7 @@ double entro2(const size_t n, const double* const x);
 
 dft_float_t* dft_cstab_alloc (const size_t n); // remember to free return!
 
-void ac2dps(const size_t n, double* const s, const dft_float_t* const ac, const dft_float_t* const costab);
+void ac2dps(const size_t n, dft_float_t* const dps, const dft_float_t* const ac, const dft_float_t* const costab);
 
 // misc stuff
 
@@ -88,7 +88,7 @@ static inline float maxabsf(const size_t n, const float* const x)
 	return d;
 }
 
-static inline float maxabdiffd(const size_t n, const float* const x, const float* const y)
+static inline float maxabdifff(const size_t n, const float* const x, const float* const y)
 {
 	float d = 0.0;
 	for (size_t i=0;i<n;++i) {

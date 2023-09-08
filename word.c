@@ -171,6 +171,7 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft_float_t* const dftim, dft_float_t* const dps, const dft_float_t* const costab)
 {
 	const size_t m = n*WBITS;
+//	const size_t mh = m/2; // no problem: WBITS will always be even :-)
 	const dft_float_t* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
 	for (size_t i=0;i<m;++i) dftre[i] = 0.0;
 	for (size_t i=0;i<m;++i) dftim[i] = 0.0;
@@ -181,6 +182,7 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 				size_t ijdx = m*jdx;
 				for (size_t ii=0,idx=0;ii<n;++ii) {
 					for (int i=0;i<WBITS;++i,++idx,++ijdx) {
+//					for (int i=0;idx<mh;++i,++idx,++ijdx) {
 						dftre[idx] += costab[ijdx];
 						dftim[idx] -= sintab[ijdx];
 					}
@@ -191,7 +193,7 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 #ifdef DFT_SINGLE_PREC_FLOAT
 	if (dps != NULL) sqmagf(m,dps,dftre,dftim); // calculate discrete power spectrum
 #else
-	if (dps != NULL) sqmag(m,dps,dftre,dftim); // calculate discrete power spectrum
+	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // calculate discrete power spectrum
 #endif
 }
 
