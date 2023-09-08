@@ -95,26 +95,26 @@ void ca_part_count(const size_t I, const size_t n, const word_t* const ca, const
 	free(wcgrain);
 }
 
-void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab)
+void ca_dps(const size_t I, const size_t n, const word_t* const ca, dft_float_t* const dps, const dft_float_t* const costab)
 {
 	const size_t m = n*WBITS;
-	double* const dftre = calloc(m,sizeof(double));
-	double* const dftim = calloc(m,sizeof(double));
+	dft_float_t* const dftre = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const dftim = calloc(m,sizeof(dft_float_t));
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const dpsr = dps+m*row;
+		dft_float_t* const dpsr = dps+m*row;
 		mw_dft(n,car,dftre,dftim,dpsr,costab);
 	}
 	free(dftim);
 	free(dftre);
 }
 
-void ca_autocov(const size_t I, const size_t n, const word_t* const ca, double* const ac)
+void ca_autocov(const size_t I, const size_t n, const word_t* const ca, dft_float_t* const ac)
 {
 	const size_t m = n*WBITS;
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const acr = ac+m*row;
+		dft_float_t* const acr = ac+m*row;
 		mw_autocov(n,car,acr);
 	}
 }

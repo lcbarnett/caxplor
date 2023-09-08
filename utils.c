@@ -12,38 +12,44 @@ double entro2(const size_t n, const double* const x)
 	return -y;
 }
 
-double* dft_cstab_alloc(const size_t n)
+dft_float_t* dft_cstab_alloc(const size_t n)
 {
-	double* const costab = calloc(2*n*n,sizeof(double));
-	double* const sintab = costab+n*n; // sin table is offset by n^2
-	const double fac = (2.0*M_PI)/(double)n;
+	dft_float_t* const costab = calloc(2*n*n,sizeof(dft_float_t));
+	dft_float_t* const sintab = costab+n*n; // sin table is offset by n^2
+	const dft_float_t fac = (dft_float_t)(2.0*M_PI)/(dft_float_t)n;
 	// build sin and cos tables
 	for (size_t i=0; i<n; ++i) {
-		double* const ctni = costab+n*i;
-		double* const stni = sintab+n*i;
-		for (size_t j=i; j<n; ++j) sincos(fac*(double)(i*j),stni+j,ctni+j);
+		dft_float_t* const ctni = costab+n*i;
+		dft_float_t* const stni = sintab+n*i;
+		for (size_t j=i; j<n; ++j) {
+#ifdef DFT_SINGLE_PREC_FLOAT
+			sincosf(fac*(dft_float_t)(i*j),stni+j,ctni+j);
+#else
+			sincos(fac*(dft_float_t)(i*j),stni+j,ctni+j);
+#endif
+		}
 	}
 	// symmetrise cos table across diagonal
 	for (size_t i=0; i<n; ++i) {
-		double* const cti  = costab+i;
-		double* const ctni = costab+n*i;
+		dft_float_t* const cti  = costab+i;
+		dft_float_t* const ctni = costab+n*i;
 		for (size_t j=i+1; j<n; ++j) cti[n*j] = ctni[j];
 	}
 	// symmetrise sin table across diagonal
 	for (size_t i=0; i<n; ++i) {
-		double* const sti  = sintab+i;
-		double* const stni = sintab+n*i;
+		dft_float_t* const sti  = sintab+i;
+		dft_float_t* const stni = sintab+n*i;
 		for (size_t j=i+1; j<n; ++j) sti[n*j] = stni[j];
 	}
 	return costab;
 }
 
-void ac2dps(const size_t n, double* const s, const double* const ac, const double* const costab)
+void ac2dps(const size_t n, double* const s, const dft_float_t* const ac, const dft_float_t* const costab)
 {
 	//const double ac0 = ac[0];
 	for (size_t k=0; k<n; ++k) {
 		const size_t nk = n*k;
-		double sk = 0.0;
+		dft_float_t sk = 0.0;
 		for (size_t j=0; j<n; ++j) sk += ac[j]*costab[nk+j];
 		//s[k] = 2.0*sk-ac0;
 		s[k] = sk;

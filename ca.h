@@ -24,8 +24,8 @@ void    ca_filter      (const size_t I, const size_t n, word_t* const ca, const 
 
 void    ca_run         (const size_t I, const size_t n, word_t* const ca, word_t* const cawrk, const int B, const word_t* const rtab, const int uto);
 
-void    ca_dps         (const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab);
-void    ca_autocov     (const size_t I, const size_t n, const word_t* const ca, double* const ac);
+void    ca_dps         (const size_t I, const size_t n, const word_t* const ca, dft_float_t* const dps, const dft_float_t* const costab);
+void    ca_autocov     (const size_t I, const size_t n, const word_t* const ca, dft_float_t* const ac);
 
 /*********************************************************************/
 /*                      bitmap stuff                                 */

@@ -16,13 +16,33 @@ static inline double xlog2x(const double x)
 
 double entro2(const size_t n, const double* const x);
 
-// cosine and sin tables for DFT - remember to free return!
+// cosine and sin tables for DFT
 
-double* dft_cstab_alloc (const size_t n);
+#ifdef DFT_SINGLE_PREC_FLOAT
+	typedef float  dft_float_t;
+#else
+	typedef double dft_float_t;
+#endif
 
-void ac2dps(const size_t n, double* const s, const double* const ac, const double* const costab);
+dft_float_t* dft_cstab_alloc (const size_t n); // remember to free return!
+
+void ac2dps(const size_t n, double* const s, const dft_float_t* const ac, const dft_float_t* const costab);
 
 // misc stuff
+
+static inline double max(const size_t n, const double* const x)
+{
+	double d = -INFINITY;
+	for (size_t i=0;i<n;++i) if (x[i] > d) d = x[i];
+	return d;
+}
+
+static inline double min(const size_t n, const double* const x)
+{
+	double d = INFINITY;
+	for (size_t i=0;i<n;++i) if (x[i] < d) d = x[i];
+	return d;
+}
 
 static inline double maxabs(const size_t n, const double* const x)
 {
@@ -34,21 +54,35 @@ static inline double maxabs(const size_t n, const double* const x)
 	return d;
 }
 
-static inline double maxabsf(const size_t n, const float* const x)
-{
-	float d = 0.0;
-	for (size_t i=0;i<n;++i) {
-		const float di = fabsf(x[i]);
-		if (di > d) d = di;
-	}
-	return d;
-}
-
 static inline double maxabdiff(const size_t n, const double* const x, const double* const y)
 {
 	double d = 0.0;
 	for (size_t i=0;i<n;++i) {
 		const double di = fabs(x[i]-y[i]);
+		if (di > d) d = di;
+	}
+	return d;
+}
+
+static inline float maxf(const size_t n, const float* const x)
+{
+	float d = -INFINITY;
+	for (size_t i=0;i<n;++i) if (x[i] > d) d = x[i];
+	return d;
+}
+
+static inline float minf(const size_t n, const float* const x)
+{
+	float d = INFINITY;
+	for (size_t i=0;i<n;++i) if (x[i] < d) d = x[i];
+	return d;
+}
+
+static inline float maxabsf(const size_t n, const float* const x)
+{
+	float d = 0.0;
+	for (size_t i=0;i<n;++i) {
+		const float di = fabsf(x[i]);
 		if (di > d) d = di;
 	}
 	return d;
@@ -65,6 +99,11 @@ static inline float maxabdiffd(const size_t n, const float* const x, const float
 }
 
 static inline void sqmag(const size_t n, double* const a, const double* const x, const double* const y)
+{
+	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];
+}
+
+static inline void sqmagf(const size_t n, float* const a, const float* const x, const float* const y)
 {
 	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];
 }
