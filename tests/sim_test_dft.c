@@ -12,8 +12,8 @@ void mw_dft_ref(const size_t n, const word_t* const w, dft_float_t* const dftre,
 			dft_float_t dftimi = 0.0;
 			for (size_t jj=0,jdx=0;jj<n;++jj) {
 				for (int j=0;j<WBITS;++j,++jdx) {
-					dftrei += BITON(w[jj],j) ? costab[m*idx+jdx] : 0.0f;
-					dftimi += BITON(w[jj],j) ? sintab[m*idx+jdx] : 0.0f;
+					dftrei += BITON(w[jj],j) ? (dft_float_t)costab[m*idx+jdx] : (dft_float_t)0;
+					dftimi += BITON(w[jj],j) ? (dft_float_t)sintab[m*idx+jdx] : (dft_float_t)0;
 				}
 			}
 			dftre[idx] = +dftrei;
@@ -86,15 +86,15 @@ int sim_test(int argc, char* argv[])
 	printf("\nft-ft max abs diff = %.4e\n",  maxabdifff(m,ftdps1,ftdps));
 	printf(  "ft-ac max abs diff = %.4e\n\n",maxabdifff(m,ftdps, acdps));
 
+//	for (size_t i=0; i<m; ++i) printf("%4zu  % 12.4f  % 12.4f\n",i,dftre[i]-dftre1[i],dftim[i]-dftim1[i]);
+
 	if (logs) {
 		for (size_t i=0;i<m;++i) ftdps1[i] = ftdps1[i] > 0.0 ? logf(ftdps1[i]) : NAN;
 		for (size_t i=0;i<m;++i) ftdps [i] = ftdps [i] > 0.0 ? logf(ftdps [i]) : NAN;
 		for (size_t i=0;i<m;++i) acdps [i] = acdps [i] > 0.0 ? logf(acdps [i]) : NAN;
 	}
 
-//	for (size_t i=0; i<m; ++i) printf("%4zu  % 12.4f  % 12.4f\n",i,dftre[i]-dftre1[i],dftim[i]-dftim1[i]);
 
-//	for (size_t i=0; i<m; ++i) printf("%4zu   %4.0f    % 12.4f\n",i,acov[i],acdps[i]);
 
 	if (disp) {
 		const dft_float_t nfac = logs ? (dft_float_t)1 : (dft_float_t)1/(dft_float_t)m;
@@ -109,19 +109,19 @@ int sim_test(int argc, char* argv[])
 		fprintf(gp,"set ylabel \"DPS\"\n");
 		if (logs) fprintf(gp,"set logs y\n"); else fprintf(gp,"set yr [0:*]\n");
 		fprintf(gp,"plot \"-\" using 1:2 w lines t \"ft\",  \"-\" using 1:2 w lines t \"ac\"\n");
-		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,nfac*ftdps[i]);
-		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*ftdps[0]);
+		for (size_t i=1; i<m-1; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,nfac*ftdps[i]);
+//		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*ftdps[0]);
 		fprintf(gp,"e\n");
-		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,nfac*acdps[i]);
-		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*acdps[0]);
+		for (size_t i=1; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,nfac*acdps[i]);
+//		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*acdps[0]);
 		fprintf(gp,"e\n");
 		fprintf(gp,"set title \"Spatial autocorrelation\"\n");
 		fprintf(gp,"set xlabel \"correlation length\"\n");
 		fprintf(gp,"set ylabel \"autocorrelation\"\n");
 		fprintf(gp,"set yr [*:*]\n");
 		fprintf(gp,"plot \"-\" using 1:2 w lines not\n");
-		for (size_t i=0; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,acov[i]/acov[0]);
-		fprintf(gp,"%g %g\n",ffac*(dft_float_t)m,1.0);
+		for (size_t i=1; i<m; ++i) fprintf(gp,"%g %g\n",ffac*(dft_float_t)i,acov[i]/acov[0]);
+//		fprintf(gp,"%g %g\n",ffac*(dft_float_t)m,1.0);
 		fprintf(gp,"e\n");
 		fprintf(gp,"unset multiplot\n");
 		gp_pclose(gp);

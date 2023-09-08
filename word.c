@@ -173,19 +173,15 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 	const size_t m = n*WBITS;
 //	const size_t mh = m/2; // no problem: WBITS will always be even :-)
 	const dft_float_t* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
-	for (size_t i=0;i<m;++i) dftre[i] = 0.0;
-	for (size_t i=0;i<m;++i) dftim[i] = 0.0;
+	for (size_t i=0;i<m;++i) dftre[i] = (dft_float_t)0;
+	for (size_t i=0;i<m;++i) dftim[i] = (dft_float_t)0;
 	for (size_t jj=0,jdx=0;jj<n;++jj) {
 		word_t wjj = w[jj];
 		for (int j=0;j<WBITS;++j,++jdx,wjj>>=1) {
 			if (WONE&wjj) {
-				size_t ijdx = m*jdx;
-				for (size_t ii=0,idx=0;ii<n;++ii) {
-					for (int i=0;i<WBITS;++i,++idx,++ijdx) {
-//					for (int i=0;idx<mh;++i,++idx,++ijdx) {
-						dftre[idx] += costab[ijdx];
-						dftim[idx] -= sintab[ijdx];
-					}
+				for (size_t i=0,ij=m*jdx;i<m;++i,++ij) {
+					dftre[i] += costab[ij];
+					dftim[i] -= sintab[ij];
 				}
 			}
 		}
