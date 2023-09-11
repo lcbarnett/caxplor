@@ -27,6 +27,25 @@ void mw_dft_ref(const size_t n, const word_t* const w, dft_float_t* const dftre,
 #endif
 }
 
+void mw_autocov_ref(const size_t n, const word_t* const w, dft_float_t* const ac)
+{
+	const size_t m = n*WBITS;
+	for (size_t k=0;k<m;++k) ac[k] = (dft_float_t)0;
+	int idx = 0;
+	for (size_t ii=0;ii<n;++ii) {
+		for (int i=0;i<WBITS;++i,++idx) {
+			int jdx = 0;
+			for (size_t jj=0;jj<n;++jj) {
+				for (int j=0;j<WBITS;++j,++jdx) {
+					const int d = idx-jdx;
+					const int k = d < 0 ? d+(int)m : d;
+					ac[k] += (dft_float_t)(BITON(w[ii],i)&BITON(w[jj],j));
+				}
+			}
+		}
+	}
+}
+
 int sim_test(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
@@ -58,12 +77,15 @@ int sim_test(int argc, char* argv[])
 	dft_float_t* const dftim1 = calloc(m,sizeof(dft_float_t));
 	dft_float_t* const ftdps1 = calloc(m,sizeof(dft_float_t));
 
-	dft_float_t* const dftre = calloc(m,sizeof(dft_float_t));
-	dft_float_t* const dftim = calloc(m,sizeof(dft_float_t));
-	dft_float_t* const ftdps = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const dftre  = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const dftim  = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const ftdps  = calloc(m,sizeof(dft_float_t));
 
-	dft_float_t* const acov  = calloc(m,sizeof(dft_float_t));
-	dft_float_t* const acdps = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const acov   = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const acdps  = calloc(m,sizeof(dft_float_t));
+
+	dft_float_t* const acov1  = calloc(m,sizeof(dft_float_t));
+	dft_float_t* const acdps1 = calloc(m,sizeof(dft_float_t));
 
 	double ts,te;
 
@@ -78,15 +100,30 @@ int sim_test(int argc, char* argv[])
 	printf("ft dps time = %8.6f\n",te-ts);
 
 	ts = timer();
+	mw_autocov_ref(n,w,acov1);
+	ac2dps(m,acdps1,acov1,costab);
+	te = timer();
+	printf("\nac ref time = %8.6f\n",te-ts);
+
+	ts = timer();
 	mw_autocov(n,w,acov);
 	ac2dps(m,acdps,acov,costab);
 	te = timer();
 	printf("ac dps time = %8.6f\n",te-ts);
 
-	printf("\nft-ft max abs diff = %.4e\n",  maxabdifff(m,ftdps1,ftdps));
-	printf(  "ft-ac max abs diff = %.4e\n\n",maxabdifff(m,ftdps, acdps));
+	printf("\nac-ac max abs diff = %.4e\n",  maxabdifff(m,acov1,acov));
 
+//const int nsb = mw_nsetbits(n,w);
+//printf("\nset bits = %d\n\n",nsb);
+//for (size_t i=0;i<m;++i) printf("%4zu  % 12.4f  % 12.4f\n",i,acov[i],acov1[i]);
+
+	printf("\nft-ft dps max abs diff = %.4e\n",  maxabdifff(m,ftdps1,ftdps));
+
+	printf(  "ft-ac dps max abs diff = %.4e\n\n",maxabdifff(m,ftdps, acdps));
+
+for (size_t i=0;i<m;++i) printf("%4zu  % 12.4f  % 12.4f\n",i,ftdps[i],acdps[i]);
 //	for (size_t i=0; i<m; ++i) printf("%4zu  % 12.4f  % 12.4f\n",i,dftre[i]-dftre1[i],dftim[i]-dftim1[i]);
+return 1;
 
 	if (logs) {
 		for (size_t i=0;i<m;++i) ftdps1[i] = ftdps1[i] > 0.0 ? logf(ftdps1[i]) : NAN;
