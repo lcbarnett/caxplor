@@ -6,14 +6,15 @@ void mw_dft_ref(const size_t n, const word_t* const w, dft_float_t* const dftre,
 {
 	const size_t m = n*WBITS;
 	const dft_float_t* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
-	for (size_t ii=0,idx=0;ii<n;++ii) {
+	for (size_t idx=0,ii=0;ii<n;++ii) {
 		for (int i=0;i<WBITS;++i,++idx) {
+			const size_t midx = m*idx;
 			dft_float_t dftrei = 0.0;
 			dft_float_t dftimi = 0.0;
-			for (size_t jj=0,jdx=0;jj<n;++jj) {
+			for (size_t jdx=0,jj=0;jj<n;++jj) {
 				for (int j=0;j<WBITS;++j,++jdx) {
-					dftrei += BITON(w[jj],j) ? (dft_float_t)costab[m*idx+jdx] : (dft_float_t)0;
-					dftimi += BITON(w[jj],j) ? (dft_float_t)sintab[m*idx+jdx] : (dft_float_t)0;
+					dftrei += BITON(w[jj],j) ? (dft_float_t)costab[midx+jdx] : (dft_float_t)0;
+					dftimi += BITON(w[jj],j) ? (dft_float_t)sintab[midx+jdx] : (dft_float_t)0;
 				}
 			}
 			dftre[idx] = +dftrei;
@@ -30,18 +31,61 @@ void mw_dft_ref(const size_t n, const word_t* const w, dft_float_t* const dftre,
 void mw_autocov_ref(const size_t n, const word_t* const w, dft_float_t* const ac)
 {
 	const size_t m = n*WBITS;
-	for (size_t k=0;k<m;++k) ac[k] = (dft_float_t)0;
-	int idx = 0;
-	for (size_t ii=0;ii<n;++ii) {
-		for (int i=0;i<WBITS;++i,++idx) {
-			int jdx = 0;
-			for (size_t jj=0;jj<n;++jj) {
-				for (int j=0;j<WBITS;++j,++jdx) {
-					const int d = idx-jdx;
-					const int k = d < 0 ? d+(int)m : d;
-					ac[k] += (dft_float_t)(BITON(w[ii],i)&BITON(w[jj],j));
+	for (size_t k=0;k<m;++k) {
+		word_t ack = (dft_float_t)0;
+		for (size_t j=0;j<m;++j) {
+			const size_t i   = j+k < m ? j+k : j+k-m; // wrap!
+			const size_t jj  = j/WBITS;
+			const int    jjj = j%WBITS;
+			const size_t ii  = i/WBITS;
+			const int    iii = i%WBITS;
+			ack += BITON(w[jj],jjj)&BITON(w[ii],iii);
+		}
+		ac[k] = (dft_float_t)ack;
+	}
+}
+
+void mw_dps(const size_t n, const word_t* const w, dft_float_t* const dps, const dft_float_t* const costab)
+{
+	//NOTE: not very efficient - use mw_dft instead!
+	const size_t m = n*WBITS;
+	for (size_t k=0;k<m;++k) dps[k] = (dft_float_t)0;
+	for (size_t i=0,ii=0;ii<n;++ii) {
+		for (int iii=0;iii<WBITS;++iii,++i) {
+			if (BITON(w[ii],i)) {
+				for (size_t j=0,jj=0;jj<n;++jj) {
+					for (int jjj=0;jjj<WBITS;++jjj,++j) {
+						if (BITON(w[jj],j)) {
+							const size_t md = m*(i>j?i-j:j-i);
+							for (size_t k=0;k<m;++k) dps[k] += costab[md+k];
+						}
+					}
 				}
 			}
+		}
+	}
+}
+
+void mw_dps_ref(const size_t n, const word_t* const w, dft_float_t* const dps, const dft_float_t* const costab)
+{
+	const size_t m = n*WBITS;
+	for (size_t k=0,kk=0;kk<n;++kk) {
+		for (int kkk=0;kkk<WBITS;++kkk,++k) {
+			const size_t mk = m*k;
+			dft_float_t dpsk = (dft_float_t)0;
+			for (size_t i=0,ii=0;ii<n;++ii) {
+				for (int iii=0;iii<WBITS;++iii,++i) {
+					if (BITON(w[ii],i)) {
+						for (size_t j=0,jj=0;jj<n;++jj) {
+							for (int jjj=0;jjj<WBITS;++jjj,++j) {
+								const size_t d = i>j ? i-j : j-i;
+								if (BITON(w[jj],j)) dpsk += costab[mk+d];
+							}
+						}
+					}
+				}
+			}
+			dps[k] = dpsk;
 		}
 	}
 }
@@ -81,6 +125,8 @@ int sim_test(int argc, char* argv[])
 	dft_float_t* const dftim  = calloc(m,sizeof(dft_float_t));
 	dft_float_t* const ftdps  = calloc(m,sizeof(dft_float_t));
 
+	dft_float_t* const dcdps  = calloc(m,sizeof(dft_float_t));
+
 	dft_float_t* const acov   = calloc(m,sizeof(dft_float_t));
 	dft_float_t* const acdps  = calloc(m,sizeof(dft_float_t));
 
@@ -109,21 +155,29 @@ int sim_test(int argc, char* argv[])
 	mw_autocov(n,w,acov);
 	ac2dps(m,acdps,acov,costab);
 	te = timer();
-	printf("ac dps time = %8.6f\n",te-ts);
+	printf("ac dps time = %8.6f\n\n",te-ts);
 
-	printf("\nac-ac max abs diff = %.4e\n",  maxabdifff(m,acov1,acov));
+	ts = timer();
+	mw_dps(n,w,dcdps,costab);
+	te = timer();
+	printf("dc dps time = %8.6f\n",te-ts);
+
+
+	printf("\nft-ft max abs diff = %.4e\n", maxabdifff(m,ftdps1,ftdps));
+	printf("ac-ac max abs diff = %.4e\n\n", maxabdifff(m,acov1,acov));
+
+	printf("ft-ac max abs diff = %.4e\n",   maxabdifff(m,ftdps, acdps));
+	printf("ft-dc max abs diff = %.4e\n\n", maxabdifff(m,ftdps, dcdps));
+
 
 //const int nsb = mw_nsetbits(n,w);
 //printf("\nset bits = %d\n\n",nsb);
 //for (size_t i=0;i<m;++i) printf("%4zu  % 12.4f  % 12.4f\n",i,acov[i],acov1[i]);
 
-	printf("\nft-ft dps max abs diff = %.4e\n",  maxabdifff(m,ftdps1,ftdps));
 
-	printf(  "ft-ac dps max abs diff = %.4e\n\n",maxabdifff(m,ftdps, acdps));
+// for (size_t i=0;i<m;++i) printf("%4zu  % 12.4f  % 12.4f\n",i,ftdps[i],dcdps[i]);
+// for (size_t i=0; i<m; ++i) printf("%4zu  % 12.4f  % 12.4f\n",i,dftre[i]-dftre1[i],dftim[i]-dftim1[i]);
 
-for (size_t i=0;i<m;++i) printf("%4zu  % 12.4f  % 12.4f\n",i,ftdps[i],acdps[i]);
-//	for (size_t i=0; i<m; ++i) printf("%4zu  % 12.4f  % 12.4f\n",i,dftre[i]-dftre1[i],dftim[i]-dftim1[i]);
-return 1;
 
 	if (logs) {
 		for (size_t i=0;i<m;++i) ftdps1[i] = ftdps1[i] > 0.0 ? logf(ftdps1[i]) : NAN;
@@ -164,12 +218,15 @@ return 1;
 		gp_pclose(gp);
 	}
 
+	free(dcdps);
 	free(ftdps1);
 	free(dftim1);
 	free(dftre1);
 	free(ftdps);
 	free(dftim);
 	free(dftre);
+	free(acdps1);
+	free(acov1);
 	free(acdps);
 	free(acov);
 	free(w);

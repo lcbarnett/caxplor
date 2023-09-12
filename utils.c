@@ -46,12 +46,10 @@ dft_float_t* dft_cstab_alloc(const size_t n)
 
 void ac2dps(const size_t n, dft_float_t* const dps, const dft_float_t* const ac, const dft_float_t* const costab)
 {
-//	const dft_float_t ac0 = ac[0];
 	for (size_t k=0; k<n; ++k) {
 		const size_t nk = n*k;
-		dft_float_t sk = 0.0;
+		dft_float_t sk = (dft_float_t)0;
 		for (size_t j=0; j<n; ++j) sk += ac[j]*costab[nk+j];
-//		dps[k] = (dft_float_t)2*sk-ac0;
 		dps[k] = sk;
 	}
 }

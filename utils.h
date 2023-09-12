@@ -98,6 +98,16 @@ static inline float maxabdifff(const size_t n, const float* const x, const float
 	return d;
 }
 
+static inline void scale(const size_t n, double* const x, const double fac)
+{
+	for (double* p=x;p<x+n;++p) *p *= fac;
+}
+
+static inline void scalef(const size_t n, float* const x, const float fac)
+{
+	for (float*  p=x;p<x+n;++p) *p *= fac;
+}
+
 static inline void sqmag(const size_t n, double* const a, const double* const x, const double* const y)
 {
 	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];

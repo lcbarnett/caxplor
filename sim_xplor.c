@@ -9,10 +9,6 @@
 
 void print_id(const rtl_t* const rule, const int filtering);
 
-#ifndef DFT_SINGLE_PREC_FLOAT
-	#error This code currently assumes single-precision floating-point for DFT operations
-#endif
-
 // Main "CA Explorer" simulation
 
 int sim_xplor(int argc, char* argv[])
@@ -122,6 +118,9 @@ int sim_xplor(int argc, char* argv[])
 	for (int m=0; m<hlen; ++m) Hf[m] = NAN;
 	double Tf[hlen];
 	for (int m=0; m<hlen; ++m) Tf[m] = NAN;
+
+	// DFT tables
+	dft_float_t* const costab = dft_cstab_alloc(n*WBITS);
 
 	const size_t mslen = 10;
 	char modestr[] = "exploring";
@@ -684,33 +683,32 @@ int sim_xplor(int argc, char* argv[])
 			// no need to redisplay image
 			break;
 
+#ifdef DFT_SINGLE_PREC_FLOAT
+
 		case 'S': // calculate CA spatial discrete power spectrum
 
 			printf("calculating CA spectrum... "); fflush(stdout);
-			const size_t m  = n*WBITS;
-			float* const costab = dft_cstab_alloc(m);
+			const size_t m = n*WBITS;
 			float* const dps = malloc(I*m*sizeof(double));
 			ca_dps(I,n,ca,dps,costab);
-
-			const float  mf = (float)m;
-			for (size_t i=0;i<m;++i) dps[i]  /= mf;  // scale by width
+			const float  mf = (float)m*(float)m;
+			for (size_t i=0;i<I*m;++i) dps[i]  /= mf;  // scale by width
 			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
-
 			FILE* gp = gp_popen(NULL,NULL);
 			fprintf(gp,"set size ratio -1\n");
 			fprintf(gp,"unset xtics\n");
 			fprintf(gp,"unset ytics\n");
+			fprintf(gp,"set cbr [0:%g]\n",maxf(I*m,dps)/2.0);
 			fprintf(gp,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
 			fprintf(gp,"set yr [-0.5:%g]\n",(float)I-0.5f);
 			fprintf(gp,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
 			fwrite(dps,sizeof(float),m*I,gp);
 			if (pclose(gp) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-
 			printf("done\n");
 			free(dps);
-			free(costab);
 			// no need to redisplay image
 			break;
+#endif
 
 		case 'h': // display usage
 
@@ -741,6 +739,8 @@ int sim_xplor(int argc, char* argv[])
 	XCloseDisplay(dis);
 
 	if (fclose(ortfs) == -1) PEEXIT("failed to close saved rtids file '%s'",ortfile);
+
+	free(costab);
 
 	rtl_free(rule);
 

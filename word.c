@@ -187,10 +187,11 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 		}
 	}
 #ifdef DFT_SINGLE_PREC_FLOAT
-	if (dps != NULL) sqmagf(m,dps,dftre,dftim); // calculate discrete power spectrum
+	if (dps != NULL) sqmagf(m,dps,dftre,dftim); // discrete power spectrum
 #else
-	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // calculate discrete power spectrum
+	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // discrete power spectrum
 #endif
+
 }
 
 void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac)
