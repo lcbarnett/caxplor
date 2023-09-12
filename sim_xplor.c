@@ -37,6 +37,7 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(eiff,    int,     1,            "advance before entropy");
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
+	CLAP_CARG(dspfac,  double,  0.3,          "reduction factor for max DSP display (colourbar)");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
 	CLAP_CARG(gpx,     int,     32,           "horizontal gap in pixels");
@@ -698,7 +699,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gp,"set size ratio -1\n");
 			fprintf(gp,"unset xtics\n");
 			fprintf(gp,"unset ytics\n");
-			fprintf(gp,"set cbr [0:%g]\n",maxf(I*m,dps)/2.0);
+			fprintf(gp,"set cbr [0:%g]\n",dspfac*maxf(I*m,dps));
 			fprintf(gp,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
 			fprintf(gp,"set yr [-0.5:%g]\n",(float)I-0.5f);
 			fprintf(gp,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
