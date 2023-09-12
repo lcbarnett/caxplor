@@ -183,6 +183,7 @@ int sim_test(int argc, char* argv[])
 		for (size_t i=0;i<m;++i) ftdps1[i] = ftdps1[i] > 0.0 ? logf(ftdps1[i]) : NAN;
 		for (size_t i=0;i<m;++i) ftdps [i] = ftdps [i] > 0.0 ? logf(ftdps [i]) : NAN;
 		for (size_t i=0;i<m;++i) acdps [i] = acdps [i] > 0.0 ? logf(acdps [i]) : NAN;
+		for (size_t i=0;i<m;++i) dcdps [i] = dcdps [i] > 0.0 ? logf(dcdps [i]) : NAN;
 	}
 
 
@@ -219,16 +220,16 @@ int sim_test(int argc, char* argv[])
 	}
 
 	free(dcdps);
-	free(ftdps1);
-	free(dftim1);
-	free(dftre1);
+	free(acdps);
+	free(acdps1);
+	free(acov);
+	free(acov1);
 	free(ftdps);
 	free(dftim);
 	free(dftre);
-	free(acdps1);
-	free(acov1);
-	free(acdps);
-	free(acov);
+	free(ftdps1);
+	free(dftim1);
+	free(dftre1);
 	free(w);
 	free(costab);
 	return EXIT_SUCCESS;
