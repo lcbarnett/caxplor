@@ -5,11 +5,11 @@
 void mw_automi_ref(const size_t n, const word_t* const w, double* const ami)
 {
 	const size_t m = n*WBITS;
-	long* const bin = malloc(m*sizeof(long));
+	int bin[4];
 	double p[4];
 	const double fac = 1.0/(double)m;
 	for (size_t k=0;k<m;++k) {
-		for (size_t l=0;l<m;++l) bin[l] = (long)0;
+		for (size_t r=0;r<4;++r) bin[r] = 0;
 		for (size_t j=0;j<m;++j) {
 			const size_t i   = j+k < m ? j+k : j+k-m; // wrap!
 			const size_t jj  = j/WBITS;
@@ -23,7 +23,6 @@ void mw_automi_ref(const size_t n, const word_t* const w, double* const ami)
 		       - xlog2x(p[0]+p[1]) - xlog2x(p[2]+p[3])
 		       - xlog2x(p[0]+p[2]) - xlog2x(p[1]+p[3]);
 	}
-	free(bin);
 }
 
 int sim_test(int argc, char* argv[])
