@@ -30,6 +30,12 @@ void ac2dps(const size_t n, dft_float_t* const dps, const dft_float_t* const ac,
 
 // misc stuff
 
+static inline void double2float(const size_t n, const double* const x, float* const xf)
+{
+	float* pf = xf;
+	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p;
+}
+
 static inline double max(const size_t n, const double* const x)
 {
 	double d = -INFINITY;

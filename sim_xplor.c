@@ -38,6 +38,7 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
 	CLAP_CARG(dspfac,  double,  0.3,          "reduction factor for max DSP display (colourbar)");
+	CLAP_CARG(amifac,  double,  0.2,          "reduction factor for max AMI display (colourbar)");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
 	CLAP_CARG(gpx,     int,     32,           "horizontal gap in pixels");
@@ -58,6 +59,8 @@ int sim_xplor(int argc, char* argv[])
 
 	const size_t n = (nwords == 0 ? nrwords : nwords);
 	const size_t I = (nrows  == 0 ? nr      : nrows);
+	const size_t m = n*WBITS; // bits in a CA row
+	const size_t M = I*m;     // total bits in the CA
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -152,6 +155,7 @@ int sim_xplor(int argc, char* argv[])
 		"s : save CA/filter id to file\n"
 		"w : write CA image to file\n"
 		"S : calculate CA spatial discrete power spectrum\n"
+		"M : calculate CA spatial auto-MI\n"
 		"q : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
@@ -689,27 +693,50 @@ int sim_xplor(int argc, char* argv[])
 		case 'S': // calculate CA spatial discrete power spectrum
 
 			printf("calculating CA spectrum... "); fflush(stdout);
-			const size_t m = n*WBITS;
-			float* const dps = malloc(I*m*sizeof(double));
-			ca_dps(I,n,ca,dps,costab);
+			float* const dps = malloc(M*sizeof(float));
+			if (filtering) ca_dps(I,n,ca,dps,costab); else ca_dps(I,n,fca,dps,costab);
 			const float  mf = (float)m*(float)m;
-			for (size_t i=0;i<I*m;++i) dps[i]  /= mf;  // scale by width
+			for (size_t i=0;i<M;++i) dps[i]  /= mf;  // scale by width
 			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
-			FILE* gp = gp_popen(NULL,NULL);
-			fprintf(gp,"set size ratio -1\n");
-			fprintf(gp,"unset xtics\n");
-			fprintf(gp,"unset ytics\n");
-			fprintf(gp,"set cbr [0:%g]\n",dspfac*maxf(I*m,dps));
-			fprintf(gp,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
-			fprintf(gp,"set yr [-0.5:%g]\n",(float)I-0.5f);
-			fprintf(gp,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			fwrite(dps,sizeof(float),m*I,gp);
-			if (pclose(gp) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+			gpc = gp_popen(NULL,NULL);
+			fprintf(gpc,"set size ratio -1\n");
+			fprintf(gpc,"unset xtics\n");
+			fprintf(gpc,"unset ytics\n");
+			fprintf(gpc,"set cbr [0:%g]\n",dspfac*maxf(M,dps));
+			fprintf(gpc,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
+			fprintf(gpc,"set yr [-0.5:%g]\n",(float)I-0.5f);
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
+			fwrite(dps,sizeof(float),M,gpc);
+			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("done\n");
 			free(dps);
 			// no need to redisplay image
 			break;
 #endif
+
+		case 'M': // calculate CA spatial auto-MI
+
+			printf("calculating CA auto-MI... "); fflush(stdout);
+			double* const amid  = malloc(M*sizeof(double));
+			float*  const amif = malloc(M*sizeof(float));
+			if (filtering) ca_automi(I,n,ca,amid); else ca_automi(I,n,fca,amid);
+			for (size_t i=0;i<I;++i) amid[m*i] = NAN; // suppress I(0)
+			double2float(M,amid,amif);
+			gpc = gp_popen(NULL,NULL);
+			fprintf(gpc,"set size ratio -1\n");
+			fprintf(gpc,"unset xtics\n");
+			fprintf(gpc,"unset ytics\n");
+			fprintf(gpc,"set cbr [0:%g]\n",amifac*maxf(M,amif));
+			fprintf(gpc,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
+			fprintf(gpc,"set yr [-0.5:%g]\n",(float)I-0.5f);
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
+			fwrite(amif,sizeof(float),M,gpc);
+			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+			printf("done\n");
+			free(amif);
+			free(amid);
+			// no need to redisplay image
+			break;
 
 		case 'h': // display usage
 

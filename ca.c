@@ -119,6 +119,16 @@ void ca_autocov(const size_t I, const size_t n, const word_t* const ca, dft_floa
 	}
 }
 
+void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami)
+{
+	const size_t m = n*WBITS;
+	for (size_t row=0; row<I; ++row) {
+		const word_t* const car = ca+n*row;
+		double* const amir = ami+m*row;
+		mw_automi(n,car,amir);
+	}
+}
+
 /*********************************************************************/
 /*                      bitmap stuff                                 */
 /*********************************************************************/

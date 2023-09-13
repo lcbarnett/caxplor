@@ -84,6 +84,9 @@ int sim_test(int argc, char* argv[])
 
 	printf("\nami max abs diff = %.4e\n\n", maxabdiff(m,amir,amio));
 
+for (size_t i=0;i<m;++i) printf("%4zu  %8.6f  % 8.6f\n",i,amio[i],sqrt(1.0-pow(2.0,-amio[i])));
+
+
 	free(amio);
 	free(amir);
 	free(w);

@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'CA Explorer' persist raise"
+#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
 #define SMAXLEN 200
 
 double entro2(const size_t n, const double* const x)
