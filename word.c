@@ -191,7 +191,6 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 #else
 	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // discrete power spectrum
 #endif
-
 }
 
 void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac)
@@ -214,6 +213,26 @@ void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac)
 			ac[idx] = (dft_float_t)aci;
 		}
 	}
+}
+
+void mw_automi(const size_t n, const word_t* const w, double* const ami)
+{
+	const size_t m = n*WBITS;
+	const double fac = 1.0/(double)m;
+	const double p0 = fac*mw_nsetbits(n,w);
+	ami[0] = -xlog2x(p0)-xlog2x(1.0-p0);
+	int* const bin = malloc(m*sizeof(int));
+	double p[4];
+	for (size_t k=1;k<m;++k) {
+		for (size_t l=0;l<m;++l) bin[l] = 0;
+		for (size_t j=0;j<m;++j) {
+			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
+			++bin[MIIDX(w[i/WBITS],i%WBITS,w[j/WBITS],j%WBITS)];
+		}
+		for (int a=0;a<4;++a) p[a] = fac*(double)bin[a];
+		ami[k] = 2.0*ami[0]+xlog2x(p[0])+xlog2x(p[1])+xlog2x(p[2])+xlog2x(p[3]);
+	}
+	free(bin);
 }
 
 /*********************************************************************/

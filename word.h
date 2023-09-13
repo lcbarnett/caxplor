@@ -48,6 +48,9 @@ typedef uint64_t word_t;
 // Flip bit in word w at position p; w should be of type word_t
 #define FLIPBIT(w,p) ((w) ^= (WONE<<(p)))
 
+// Index for binning mutual information
+#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&(word_t)1)|((((wj)>>(j))<<1)&(word_t)2))
+
 // Usual caveats!
 #define SWAP(type,a,b) {type const a##tmp = a; a = b; b = a##tmp;}
 
@@ -289,6 +292,8 @@ void mw_print_bin  (const size_t n, const word_t* const w);
 void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft_float_t* const dftim, dft_float_t* const dps, const dft_float_t* const costab);
 
 void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac);
+
+void mw_automi(const size_t n, const word_t* const w, double* const ami);
 
 /*********************************************************************/
 
