@@ -32,9 +32,9 @@ static inline float* double2float_alloc(const size_t n, const double* const x)
 	return xf;
 }
 
-static inline float* double2float(const size_t n, const double* const x) // in-place version
+static inline float* double2float_inplace(const size_t n, const double* const x) // in-place version
 {
-	// WARNING: This code is mad, bad and dangerous: note that it completely messes up x
+	// WARNING: This code is mad, bad and dangerous: note that it leaves x unusable
 	float* const xf = (float*)x; // alias as array of float
 	float* pf = xf;
 	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p; // "okay" because sizeof(float) <= sizeof(double)
@@ -145,6 +145,8 @@ void  gp_fplot(const char* const gpname, const char* const gpdir, const char* co
 FILE* gp_popen(const char* const gpcmd,  const char* const gpterm);
 void  gp_pclose(FILE* const gpp);
 
+// WARNING: if 'inplace' is set, x becomes unusable!
+void  gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace);
 
 /*********************************************************************/
 /*                      Useful macros                                */

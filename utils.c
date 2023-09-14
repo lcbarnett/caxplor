@@ -92,4 +92,18 @@ void gp_pclose(FILE* const gpp)
 	if (pclose(gpp) == -1) PEEXIT("failed to close pipe to Gnuplot\n");
 }
 
+void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace)
+{
+	// WARNING: if 'inplace' is set, x becomes unusable!
+	if (inplace) {
+		const float* const xf = double2float_inplace(n,x);
+		fwrite(xf,sizeof(float),n,gpp);
+	}
+	else {
+		float* const xf = double2float_alloc(n,x);
+		fwrite(xf,sizeof(float),n,gpp);
+		free(xf);
+	}
+}
+
 #undef GPDEFTERM

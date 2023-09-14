@@ -45,6 +45,7 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(gpy,     int,     32,           "vertical gap in pixels");
 	CLAP_CARG(wdec,    int,     0,            "window decorations?");
 	CLAP_CARG(gpdir,   cstr,   "/tmp",        "Gnuplot file directory");
+	CLAP_CARG(gpipw,   int,     1,            "In-place binary write for Gnuplot");
 	CLAP_CARG(imdir,   cstr,   "/tmp",        "image file directory");
 	CLAP_CARG(imfmt,   cstr,   "png",         "image format (png, bmp, gif, jpg/jpeg)");
 	puts("---------------------------------------------------------------------------------------\n");
@@ -690,7 +691,7 @@ int sim_xplor(int argc, char* argv[])
 
 		case 'S': // calculate CA spatial discrete power spectrum
 
-			printf("calculating CA spectrum... "); fflush(stdout);
+			printf("calculating CA spectrum ... "); fflush(stdout);
 			double* const dps = malloc(M*sizeof(double));
 			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
 			scale(M,dps,1.0/((double)m*(double)m));
@@ -703,8 +704,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			float* const dpsf = double2float(M,dps); // NOTE: can't use dps again!!!
-			fwrite(dpsf,sizeof(float),M,gpc);
+			gp_binary_write(gpc,M,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("done\n");
 			free(dps);
@@ -727,8 +727,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			float* const amif = double2float(M,ami); // NOTE: can't use ami again!!!
-			fwrite(amif,sizeof(float),M,gpc);
+			gp_binary_write(gpc,M,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("max. MI = %g\n",amimax);
 			free(ami);
