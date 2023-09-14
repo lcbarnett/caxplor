@@ -30,10 +30,21 @@ void ac2dps(const size_t n, dft_float_t* const dps, const dft_float_t* const ac,
 
 // misc stuff
 
-static inline void double2float(const size_t n, const double* const x, float* const xf)
+static inline float* double2float_alloc(const size_t n, const double* const x)
 {
+	float* const xf = malloc(n*sizeof(float)); // !!! remember to free !!!
 	float* pf = xf;
 	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p;
+	return xf;
+}
+
+static inline float* double2float(const size_t n, const double* const x) // in-place version
+{
+	// WARNING: This code is mad, bad and dangerous: note that it completely messes up x
+	float* const xf = (float*)x; // alias as array of float
+	float* pf = xf;
+	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p; // "okay" because sizeof(float) <= sizeof(double)
+	return xf;
 }
 
 static inline double max(const size_t n, const double* const x)
