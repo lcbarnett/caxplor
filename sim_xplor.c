@@ -722,7 +722,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set palette defined ( 0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red' )\n");
+			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
 			fprintf(gpc,"# set cbr [0:1]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);

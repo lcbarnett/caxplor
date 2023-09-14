@@ -94,7 +94,7 @@ void gp_pclose(FILE* const gpp)
 
 void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace)
 {
-	// WARNING: if 'inplace' is set, x becomes unusable!
+	// WARNING: if 'inplace' is set, x is unusable after calling (but should still be freed if allocated on heap)!
 	if (inplace) {
 		const float* const xf = double2float_inplace(n,x);
 		fwrite(xf,sizeof(float),n,gpp);
@@ -105,5 +105,10 @@ void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, con
 		free(xf);
 	}
 }
+
+const char* gp_palette[] = {
+	"0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red'",
+	"0 'black', 3 'blue', 6 'green', 9 'yellow', 15 'red', 100 'dark-red'",
+};
 
 #undef GPDEFTERM
