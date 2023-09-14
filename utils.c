@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'CA Explorer' persist raise"
+#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
 #define SMAXLEN 200
 
 double entro2(const size_t n, const double* const x)
@@ -10,6 +10,42 @@ double entro2(const size_t n, const double* const x)
 	double y = 0.0;
 	for (const double* p=x; p<x+n; ++p) y += xlog2x(*p);
 	return -y;
+}
+
+double* dft_cstab_alloc(const size_t n)
+{
+	double* const costab = calloc(2*n*n,sizeof(double));
+	double* const sintab = costab+n*n; // sin table is offset by n^2
+	const double fac = (double)(2.0*M_PI)/(double)n;
+	// build sin and cos tables
+	for (size_t i=0; i<n; ++i) {
+		double* const ctni = costab+n*i;
+		double* const stni = sintab+n*i;
+		for (size_t j=i; j<n; ++j) sincos(fac*(double)(i*j),stni+j,ctni+j);
+	}
+	// symmetrise cos table across diagonal
+	for (size_t i=0; i<n; ++i) {
+		double* const cti  = costab+i;
+		double* const ctni = costab+n*i;
+		for (size_t j=i+1; j<n; ++j) cti[n*j] = ctni[j];
+	}
+	// symmetrise sin table across diagonal
+	for (size_t i=0; i<n; ++i) {
+		double* const sti  = sintab+i;
+		double* const stni = sintab+n*i;
+		for (size_t j=i+1; j<n; ++j) sti[n*j] = stni[j];
+	}
+	return costab;
+}
+
+void ac2dps(const size_t n, double* const dps, const double* const ac, const double* const costab)
+{
+	for (size_t k=0; k<n; ++k) {
+		const size_t nk = n*k;
+		double sk = 0.0;
+		for (size_t j=0; j<n; ++j) sk += ac[j]*costab[nk+j];
+		dps[k] = sk;
+	}
 }
 
 /*********************************************************************/
@@ -54,6 +90,20 @@ FILE* gp_popen(const char* const gpcmd, const char* const gpterm)
 void gp_pclose(FILE* const gpp)
 {
 	if (pclose(gpp) == -1) PEEXIT("failed to close pipe to Gnuplot\n");
+}
+
+void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace)
+{
+	// WARNING: if 'inplace' is set, x becomes unusable!
+	if (inplace) {
+		const float* const xf = double2float_inplace(n,x);
+		fwrite(xf,sizeof(float),n,gpp);
+	}
+	else {
+		float* const xf = double2float_alloc(n,x);
+		fwrite(xf,sizeof(float),n,gpp);
+		free(xf);
+	}
 }
 
 #undef GPDEFTERM

@@ -7,18 +7,7 @@
 #include "clap.h"
 #include "strman.h"
 
-void print_id(const rtl_t* const rule, const int filtering)
-{
-	printf("CA id = ");
-	rt_print_id(rule->size,rule->tab);
-	printf(", lambda = %6.4f",rt_lambda(rule->size,rule->tab));
-	if (rule->filt != NULL && filtering) {
-		printf(" : filter id = ");
-		rt_print_id(rule->filt->size,rule->filt->tab);
-		printf(", lambda = %6.4f",rt_lambda(rule->filt->size,rule->filt->tab));
-	}
-	putchar('\n');
-}
+void print_id(const rtl_t* const rule, const int filtering);
 
 // Main "CA Explorer" simulation
 
@@ -30,6 +19,7 @@ int sim_xplor(int argc, char* argv[])
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
 	CLAP_CARG(nwords,  size_t,  0,            "number of words (or 0 for automatic)");
+	CLAP_VARG(nrows,   size_t,  0,            "number of rows (or 0 for automatic)");
 	CLAP_VARG(rsiz,    int,     5,            "CA rule size");
 	CLAP_VARG(rlam,    double,  0.6,          "CA rule lambda");
 	CLAP_CARG(rseed,   ulong,   0,            "CA rule random seed (or 0 for unpredictable)");
@@ -47,12 +37,15 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(eiff,    int,     1,            "advance before entropy");
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
+	CLAP_CARG(dspfac,  double,  0.3,          "reduction factor for max DSP display (colourbar)");
+	CLAP_CARG(amifac,  double,  0.2,          "reduction factor for max AMI display (colourbar)");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
 	CLAP_CARG(gpx,     int,     32,           "horizontal gap in pixels");
 	CLAP_CARG(gpy,     int,     32,           "vertical gap in pixels");
 	CLAP_CARG(wdec,    int,     0,            "window decorations?");
 	CLAP_CARG(gpdir,   cstr,   "/tmp",        "Gnuplot file directory");
+	CLAP_CARG(gpipw,   int,     1,            "In-place binary write for Gnuplot");
 	CLAP_CARG(imdir,   cstr,   "/tmp",        "image file directory");
 	CLAP_CARG(imfmt,   cstr,   "png",         "image format (png, bmp, gif, jpg/jpeg)");
 	puts("---------------------------------------------------------------------------------------\n");
@@ -62,11 +55,13 @@ int sim_xplor(int argc, char* argv[])
 
 	// get number of CA rows/cols/words to fit screen
 
-	size_t nrows, ncols, nrwords;
-	get_ca_dims(ppc,gpx,gpy,&nrows,&ncols,&nrwords,1);
+	size_t nr, ncols, nrwords;
+	get_ca_dims(ppc,gpx,gpy,&nr,&ncols,&nrwords,1);
 
 	const size_t n = (nwords == 0 ? nrwords : nwords);
-	const size_t I = nrows;
+	const size_t I = (nrows  == 0 ? nr      : nrows);
+	const size_t m = n*WBITS; // bits in a CA row
+	const size_t M = I*m;     // total bits in the CA
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -129,6 +124,9 @@ int sim_xplor(int argc, char* argv[])
 	double Tf[hlen];
 	for (int m=0; m<hlen; ++m) Tf[m] = NAN;
 
+	// DFT tables
+	double* const costab = dft_cstab_alloc(n*WBITS);
+
 	const size_t mslen = 10;
 	char modestr[] = "exploring";
 
@@ -157,6 +155,8 @@ int sim_xplor(int argc, char* argv[])
 		"p : calculate CA period\n"
 		"s : save CA/filter id to file\n"
 		"w : write CA image to file\n"
+		"S : calculate CA spatial discrete power spectrum\n"
+		"I : calculate CA spatial auto-MI\n"
 		"q : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
@@ -689,6 +689,51 @@ int sim_xplor(int argc, char* argv[])
 			// no need to redisplay image
 			break;
 
+		case 'S': // calculate CA spatial discrete power spectrum
+
+			printf("calculating CA spectrum ... "); fflush(stdout);
+			double* const dps = malloc(M*sizeof(double));
+			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
+			scale(M,dps,1.0/((double)m*(double)m));
+			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
+			gpc = gp_popen(NULL,NULL);
+			fprintf(gpc,"set size ratio -1\n");
+			fprintf(gpc,"unset xtics\n");
+			fprintf(gpc,"unset ytics\n");
+			fprintf(gpc,"set cbr [0:%g]\n",dspfac*max(M,dps));
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
+			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
+			gp_binary_write(gpc,M,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
+			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+			printf("done\n");
+			free(dps);
+			// no need to redisplay image
+			break;
+
+		case 'I': // calculate CA spatial auto-MI
+
+			printf("calculating CA auto-MI ... "); fflush(stdout);
+			double* const ami = malloc(M*sizeof(double));
+			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
+			for (size_t i=0;i<I;++i) ami[m*i] = NAN; // suppress I(0)
+			const double amimax = max(M,ami);
+			gpc = gp_popen(NULL,NULL);
+			fprintf(gpc,"set size ratio -1\n");
+			fprintf(gpc,"unset xtics\n");
+			fprintf(gpc,"unset ytics\n");
+			fprintf(gpc,"set palette defined ( 0 'black', 5 'blue', 10 'yellow', 100 'red' )\n");
+			fprintf(gpc,"# set cbr [0:1]\n");
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
+			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
+			gp_binary_write(gpc,M,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
+			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+			printf("max. MI = %g\n",amimax);
+			free(ami);
+			// no need to redisplay image
+			break;
+
 		case 'h': // display usage
 
 			printf("help\n\n%s\n",usagestr);
@@ -719,6 +764,8 @@ int sim_xplor(int argc, char* argv[])
 
 	if (fclose(ortfs) == -1) PEEXIT("failed to close saved rtids file '%s'",ortfile);
 
+	free(costab);
+
 	rtl_free(rule);
 
 	free(wca);
@@ -726,4 +773,17 @@ int sim_xplor(int argc, char* argv[])
 	free(ca);
 
 	return EXIT_SUCCESS;
+}
+
+void print_id(const rtl_t* const rule, const int filtering)
+{
+	printf("CA id = ");
+	rt_print_id(rule->size,rule->tab);
+	printf(", lambda = %6.4f",rt_lambda(rule->size,rule->tab));
+	if (rule->filt != NULL && filtering) {
+		printf(" : filter id = ");
+		rt_print_id(rule->filt->size,rule->filt->tab);
+		printf(", lambda = %6.4f",rt_lambda(rule->filt->size,rule->filt->tab));
+	}
+	putchar('\n');
 }

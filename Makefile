@@ -3,9 +3,11 @@ OBJ = $(patsubst %.c,.%.o,$(SRC))
 DEP = $(patsubst %.o,%.d,$(OBJ))
 BIN = caxplor
 
+# Note: _GNU_SOURCE need for sincos function
+
 OFLAGS = -march=native -O3 -flto
 WFLAGS = -Wall -Werror -Wextra -Wconversion -Winline -Wno-unused-parameter
-DFLAGS = -D_DEFAULT_SOURCE -DUNSAFE_ZPIXMAP
+DFLAGS = -D_DEFAULT_SOURCE -DUNSAFE_ZPIXMAP -D_GNU_SOURCE
 CFLAGS = $(OFLAGS) $(WFLAGS) $(DFLAGS)
 
 LDFLAGS = $(OFLAGS) -lgd -lX11 -lm

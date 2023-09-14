@@ -95,6 +95,40 @@ void ca_part_count(const size_t I, const size_t n, const word_t* const ca, const
 	free(wcgrain);
 }
 
+void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab)
+{
+	const size_t m = n*WBITS;
+	double* const dftre = calloc(m,sizeof(double));
+	double* const dftim = calloc(m,sizeof(double));
+	for (size_t row=0; row<I; ++row) {
+		const word_t* const car = ca+n*row;
+		double* const dpsr = dps+m*row;
+		mw_dft(n,car,dftre,dftim,dpsr,costab);
+	}
+	free(dftim);
+	free(dftre);
+}
+
+void ca_autocov(const size_t I, const size_t n, const word_t* const ca, double* const ac)
+{
+	const size_t m = n*WBITS;
+	for (size_t row=0; row<I; ++row) {
+		const word_t* const car = ca+n*row;
+		double* const acr = ac+m*row;
+		mw_autocov(n,car,acr);
+	}
+}
+
+void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami)
+{
+	const size_t m = n*WBITS;
+	for (size_t row=0; row<I; ++row) {
+		const word_t* const car = ca+n*row;
+		double* const amir = ami+m*row;
+		mw_automi(n,car,amir);
+	}
+}
+
 /*********************************************************************/
 /*                      bitmap stuff                                 */
 /*********************************************************************/
@@ -110,7 +144,7 @@ gdImagePtr ca_image_create(
 	// NOTE: you should call gdImageDestroy(im) after using the image!
 
 	const int imx = ppc*(int)n*WBITS; // pixels per row
-	const int imy = ppc*(int)I;          // pixels per column
+	const int imy = ppc*(int)I;       // pixels per column
 
 	// create a gd image object (with space for 1-pixel border)
 	gdImagePtr const im = gdImageCreate(imx+2,imy+2);
@@ -121,19 +155,31 @@ gdImagePtr ca_image_create(
 	const int colb = gdImageColorAllocate(im,0,0,0);                // border colour
 
 	// draw border, and set background to off colour
-	gdImageRectangle(im,0,0,imx+1,imy+1,colb); // 1-pixel border
-	gdImageFilledRectangle(im,1,1,imx,imy,col0);     // background
+	gdImageRectangle(im,0,0,imx+1,imy+1,colb);   // 1-pixel border
+	gdImageFilledRectangle(im,1,1,imx,imy,col0); // background
 
 	// if no CA, return an empty image
 	if (ca == NULL) return im;
 
-	// draw a rectangle at each on cell (reverse x direction, so left -> right is hi -> lo)
-	const int revx = imx-ppc+1;
 	const word_t* w = ca;
-	for (int y=0; y<imy; y += ppc) { // for each row
-		for (int x=0; x<imx;++w) { // for each word
-			for (word_t b=0; b<WBITS; ++b, x += ppc) { // for each bit in word
-				if (BITON(*w,b)) gdImageFilledRectangle(im,revx-x,y+1,imx-x,y+ppc,col1);
+	if (ppc == 1) {
+		// draw a pixel at each on cell (reverse x direction, so left -> right is hi -> lo)
+		for (int y=0; y<imy; ++y) { // for each row
+			for (int x=0; x<imx; ++w) { // for each word
+				for (word_t b=0; b<WBITS; ++b, ++x) { // for each bit in word
+					if (BITON(*w,b)) gdImageSetPixel(im,imx-x,y+1,col1);
+				}
+			}
+		}
+	}
+	else {
+		// draw a rectangle at each on cell (reverse x direction, so left -> right is hi -> lo)
+		const int revx = imx-ppc+1;
+		for (int y=0; y<imy; y += ppc) { // for each row
+			for (int x=0; x<imx; ++w) { // for each word
+				for (word_t b=0; b<WBITS; ++b, x += ppc) { // for each bit in word
+					if (BITON(*w,b)) gdImageFilledRectangle(im,revx-x,y+1,imx-x,y+ppc,col1);
+				}
 			}
 		}
 	}

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "utils.h"
 #include "mt64.h"
 
 #ifndef UINT64_MAX
@@ -37,12 +38,18 @@ typedef uint64_t word_t;
 // Get bit in word w at position p (i.e. mask other bits to 0); w should be of type word_t
 #define GETBIT(w,p) ((WONE<<(p))&(w))
 
+// Set bit in word w at position p; w should be of type word_t
+#define SETBIT(w,p) ((w) |= (WONE<<(p)))
+
 // Set bit in word w at position p to bit b; w should be of type word_t, and b must be either WONE or WZERO
 // Note that if p is an expression, it will be evaluated twice in undefined order - careful!
 #define PUTBIT(w,p,b) ((w) = (((w)&(~(WONE<<(p))))|((b)<<(p))))
 
 // Flip bit in word w at position p; w should be of type word_t
 #define FLIPBIT(w,p) ((w) ^= (WONE<<(p)))
+
+// Index for binning mutual information
+#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&(word_t)1)|((((wj)>>(j))<<1)&(word_t)2))
 
 // Usual caveats!
 #define SWAP(type,a,b) {type const a##tmp = a; a = b; b = a##tmp;}
@@ -55,9 +62,16 @@ typedef uint64_t word_t;
 /*                      single-word                                  */
 /*********************************************************************/
 
-static inline word_t wd_randomise(mt_t* const prng)
+static inline word_t wd_random(mt_t* const prng)
 {
 	return mt_uint(prng);
+}
+
+static inline word_t wd_randomb(const double p, mt_t* const prng)
+{
+	word_t w = WZERO;
+	for (int i=0; i<WBITS; ++i) if (mt_rand(prng) < p) SETBIT(w,i);
+	return w;
 }
 
 static inline int wd_cointoss(mt_t* const prng)
@@ -97,10 +111,9 @@ static inline word_t wd_reverse(word_t w)
 	return w;
 }
 
-static inline word_t wd_noisify(word_t w, const double p, mt_t* const prng)
+static inline void wd_noisify(word_t* const w, const double p, mt_t* const prng)
 {
-	for (int i=0; i<WBITS; ++i) if (mt_rand(prng) < p) FLIPBIT(w,i);
-	return w;
+	for (int i=0; i<WBITS; ++i) if (mt_rand(prng) < p) FLIPBIT(*w,i);
 }
 
 static inline int wd_nsetbits(word_t w) // Kernighan!
@@ -119,6 +132,10 @@ void wd_printc   (const word_t w, const int W);
 void wd_fprintc  (const word_t w, const int W, FILE* const fstream);
 void wd_print_lo (const word_t w, const int b);
 void wd_fprint_lo(const word_t w, const int b, FILE* const fstream);
+
+void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab);
+
+void wd_autocov(const word_t w, double* const wac);
 
 /*********************************************************************/
 /*                      multi-word                                   */
@@ -141,7 +158,12 @@ static inline void mw_zero(const size_t n, word_t* const w)
 
 static inline void mw_randomise(const size_t n, word_t* const w, mt_t* const prng)
 {
-	for (word_t* pw=w;pw<w+n;++pw) *pw = wd_randomise(prng);
+	for (word_t* pw=w;pw<w+n;++pw) *pw = wd_random(prng);
+}
+
+static inline void mw_randomiseb(const size_t n, word_t* const w, const double p, mt_t* const prng)
+{
+	for (word_t* pw=w;pw<w+n;++pw) *pw = wd_randomb(p,prng);
 }
 
 static inline int mw_equal(const size_t n, const word_t* const w1, const word_t* const w2)
@@ -182,7 +204,7 @@ static inline void mw_reverse(const size_t n, word_t* const wrev, const word_t* 
 
 static inline void wm_noisify(const size_t n, word_t* const w, const double p, mt_t* const prng)
 {
-	for (size_t k=0; k<n; ++k) wd_noisify(w[k],p,prng);
+	for (word_t* pw=w; pw<w+n; ++pw) wd_noisify(pw,p,prng);
 }
 
 static inline int mw_equiv(const size_t n, const word_t* const w1, const word_t* const w2)
@@ -266,6 +288,10 @@ void mw_fprints    (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_prints     (const size_t n, const word_t* const w);
 void mw_fprint_bin (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_print_bin  (const size_t n, const word_t* const w);
+
+void mw_dft     (const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab);
+void mw_autocov (const size_t n, const word_t* const w, double* const ac);
+void mw_automi  (const size_t n, const word_t* const w, double* const ami);
 
 /*********************************************************************/
 
