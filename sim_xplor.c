@@ -714,22 +714,23 @@ int sim_xplor(int argc, char* argv[])
 		case 'I': // calculate CA spatial auto-MI
 
 			printf("calculating CA auto-MI ... "); fflush(stdout);
-			double* const ami = malloc(M*sizeof(double));
-			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
-			for (size_t i=0;i<I;++i) ami[m*i] = NAN; // suppress I(0)
-			const double amimax = max(M,ami);
+			double* const ami = malloc((M-I)*sizeof(double));
+			double* const ent = malloc(I*sizeof(double));
+			if (filtering) ca_automi(I,n,fca,ami,ent); else ca_automi(I,n,ca,ami,ent);
+			const double amimax = max(M-I,ami);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set palette defined ( 0 'black', 5 'blue', 10 'yellow', 100 'red' )\n");
+			fprintf(gpc,"set palette defined ( 0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red' )\n");
 			fprintf(gpc,"# set cbr [0:1]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
-			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			gp_binary_write(gpc,M,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m-1,I);
+			gp_binary_write(gpc,M-I,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("max. MI = %g\n",amimax);
+			free(ent);
 			free(ami);
 			// no need to redisplay image
 			break;

@@ -2,14 +2,15 @@
 #include "clap.h"
 #include "utils.h"
 
-void mw_automi_ref(const size_t n, const word_t* const w, double* const ami)
+void mw_automi_ref(const size_t n, const word_t* const w, double* const ami, double* const entro)
 {
 	const size_t m = n*WBITS;
-	int bin[4];
-	double p[4];
 	const double fac = 1.0/(double)m;
-	for (size_t k=0;k<m;++k) {
-		for (size_t r=0;r<4;++r) bin[r] = 0;
+	const double p0 = fac*mw_nsetbits(n,w);
+	*entro = -xlog2x(p0)-xlog2x(1.0-p0);
+	double p[4];
+	for (size_t k=1;k<m;++k) {
+		int bin[4] = {0};
 		for (size_t j=0;j<m;++j) {
 			const size_t i   = j+k < m ? j+k : j+k-m; // wrap!
 			const size_t jj  = j/WBITS;
@@ -19,9 +20,9 @@ void mw_automi_ref(const size_t n, const word_t* const w, double* const ami)
 			++bin[MIIDX(w[ii],iii,w[jj],jjj)];
 		}
 		for (int a=0;a<4;++a) p[a] = fac*(double)bin[a];
-		ami[k] = xlog2x(p[0]) + xlog2x(p[1]) + xlog2x(p[2]) + xlog2x(p[3])
-		       - xlog2x(p[0]+p[1]) - xlog2x(p[2]+p[3])
-		       - xlog2x(p[0]+p[2]) - xlog2x(p[1]+p[3]);
+		ami[k-1] = xlog2x(p[0]) + xlog2x(p[1]) + xlog2x(p[2]) + xlog2x(p[3])
+		         - xlog2x(p[0]+p[1]) - xlog2x(p[2]+p[3])
+		         - xlog2x(p[0]+p[2]) - xlog2x(p[1]+p[3]);
 	}
 }
 
@@ -69,22 +70,24 @@ int sim_test(int argc, char* argv[])
 	double* const amir = calloc(m,sizeof(double));
 	double* const amio = calloc(m,sizeof(double));
 
+	double entr, ento;
+
 	double ts,te;
 
 	ts = timer();
-	mw_automi_ref(n,w,amir);
+	mw_automi_ref(n,w,amir,&entr);
 	te = timer();
 	printf("ami ref time = %8.6f\n",te-ts);
 
 	ts = timer();
-	mw_automi(n,w,amio);
+	mw_automi(n,w,amio,&ento);
 	te = timer();
 	printf("ami opt time = %8.6f\n",te-ts);
 
-	printf("\nami max abs diff = %.4e\n\n", maxabdiff(m,amir,amio));
+	printf("\nami max abs diff = %.4e (%.4e)\n\n", maxabdiff(m-1,amir,amio),fabs(entr-ento));
 
-for (size_t i=0;i<m;++i) printf("%4zu  %8.6f  % 8.6f\n",i,amio[i],sqrt(1.0-pow(2.0,-amio[i])));
-
+// for (size_t i=0;i<m;++i) printf("%4zu  %8.6f  % 8.6f\n",i,amio[i],sqrt(1.0-pow(2.0,-amio[i])));
+for (size_t k=0;k<m-1;++k) printf("%4zu  % 8.6f  % 8.6f\n",k,amio[k],ento-amio[k]);
 
 	free(amio);
 	free(amir);

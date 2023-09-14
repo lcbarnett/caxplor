@@ -119,13 +119,13 @@ void ca_autocov(const size_t I, const size_t n, const word_t* const ca, double* 
 	}
 }
 
-void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami)
+void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami, double* const entro)
 {
 	const size_t m = n*WBITS;
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const amir = ami+m*row;
-		mw_automi(n,car,amir);
+		double* const amir = ami+(m-1)*row;
+		mw_automi(n,car,amir,entro+row);
 	}
 }
 

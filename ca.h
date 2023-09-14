@@ -26,7 +26,7 @@ void    ca_run         (const size_t I, const size_t n, word_t* const ca, word_t
 
 void    ca_dps         (const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab);
 void    ca_autocov     (const size_t I, const size_t n, const word_t* const ca, double* const ac);
-void    ca_automi      (const size_t I, const size_t n, const word_t* const ca, double* const ami);
+void    ca_automi      (const size_t I, const size_t n, const word_t* const ca, double* const ami, double* const entro);
 
 /*********************************************************************/
 /*                      bitmap stuff                                 */
