@@ -716,6 +716,13 @@ int sim_xplor(int argc, char* argv[])
 			printf("calculating CA auto-MI ... "); fflush(stdout);
 			double* const ami = malloc((M-I)*sizeof(double));
 			double* const ent = malloc(I*sizeof(double));
+
+			if (1) {
+				for (size_t i=0,j=0;i<I;++i) {
+					for (size_t k=0;k<m-1;++k,++j) ami[j] = ent[i]-ami[j];
+				}
+			}
+
 			if (filtering) ca_automi(I,n,fca,ami,ent); else ca_automi(I,n,ca,ami,ent);
 			const double amimax = max(M-I,ami);
 			gpc = gp_popen(NULL,NULL);
