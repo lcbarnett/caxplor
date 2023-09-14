@@ -217,10 +217,9 @@ void mw_automi(const size_t n, const word_t* const w, double* const ami)
 	const double fac = 1.0/(double)m;
 	const double p0 = fac*mw_nsetbits(n,w);
 	const double entro = -xlog2x(p0)-xlog2x(1.0-p0);
-	int bin[4];
 	ami[0] = entro;
 	for (size_t k=1;k<m;++k) {
-		for (size_t r=0;r<4;++r) bin[r] = 0;
+		int bin[4] = {0}; // zero-initialise
 		for (size_t j=0;j<m;++j) {
 			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
 			++bin[MIIDX(w[i/WBITS],i%WBITS,w[j/WBITS],j%WBITS)];
