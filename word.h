@@ -133,9 +133,9 @@ void wd_fprintc  (const word_t w, const int W, FILE* const fstream);
 void wd_print_lo (const word_t w, const int b);
 void wd_fprint_lo(const word_t w, const int b, FILE* const fstream);
 
-void wd_dft(const word_t w, dft_float_t* const wdftre, dft_float_t* const wdftim, const dft_float_t* const costab);
+void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab);
 
-void wd_autocov(const word_t w, dft_float_t* const wac);
+void wd_autocov(const word_t w, double* const wac);
 
 /*********************************************************************/
 /*                      multi-word                                   */
@@ -289,9 +289,9 @@ void mw_prints     (const size_t n, const word_t* const w);
 void mw_fprint_bin (const size_t n, const word_t* const w, FILE* const fstream);
 void mw_print_bin  (const size_t n, const word_t* const w);
 
-void mw_dft     (const size_t n, const word_t* const w, dft_float_t* const dftre, dft_float_t* const dftim, dft_float_t* const dps, const dft_float_t* const costab);
-void mw_autocov (const size_t n, const word_t* const w, dft_float_t* const ac);
-void mw_automi  (const size_t n, const word_t* const w, double*      const ami);
+void mw_dft     (const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab);
+void mw_autocov (const size_t n, const word_t* const w, double* const ac);
+void mw_automi  (const size_t n, const word_t* const w, double* const ami);
 
 /*********************************************************************/
 

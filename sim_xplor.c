@@ -124,7 +124,7 @@ int sim_xplor(int argc, char* argv[])
 	for (int m=0; m<hlen; ++m) Tf[m] = NAN;
 
 	// DFT tables
-	dft_float_t* const costab = dft_cstab_alloc(n*WBITS);
+	double* const costab = dft_cstab_alloc(n*WBITS);
 
 	const size_t mslen = 10;
 	char modestr[] = "exploring";
@@ -155,7 +155,7 @@ int sim_xplor(int argc, char* argv[])
 		"s : save CA/filter id to file\n"
 		"w : write CA image to file\n"
 		"S : calculate CA spatial discrete power spectrum\n"
-		"M : calculate CA spatial auto-MI\n"
+		"I : calculate CA spatial auto-MI\n"
 		"q : (or ESC) exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
@@ -688,33 +688,30 @@ int sim_xplor(int argc, char* argv[])
 			// no need to redisplay image
 			break;
 
-#ifdef DFT_SINGLE_PREC_FLOAT
-
 		case 'S': // calculate CA spatial discrete power spectrum
 
 			printf("calculating CA spectrum... "); fflush(stdout);
-			float* const dps = malloc(M*sizeof(float));
-			if (filtering) ca_dps(I,n,ca,dps,costab); else ca_dps(I,n,fca,dps,costab);
-			const float  mf = (float)m*(float)m;
-			for (size_t i=0;i<M;++i) dps[i]  /= mf;  // scale by width
+			double* const dps = malloc(M*sizeof(double));
+			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
+			scale(M,dps,1.0/((double)m*(double)m));
 			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set cbr [0:%g]\n",dspfac*maxf(M,dps));
-			fprintf(gpc,"set xr [+0.5:%g]\n",(float)(m/2)+0.5f);
-			fprintf(gpc,"set yr [-0.5:%g]\n",(float)I-0.5f);
+			fprintf(gpc,"set cbr [0:%g]\n",dspfac*max(M,dps));
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
+			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			fwrite(dps,sizeof(float),M,gpc);
+			float* const dpsf = double2float(M,dps); // NOTE: can't use dps again!!!
+			fwrite(dpsf,sizeof(float),M,gpc);
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("done\n");
 			free(dps);
 			// no need to redisplay image
 			break;
-#endif
 
-		case 'M': // calculate CA spatial auto-MI
+		case 'I': // calculate CA spatial auto-MI
 
 			printf("calculating CA auto-MI ... "); fflush(stdout);
 			double* const ami = malloc(M*sizeof(double));

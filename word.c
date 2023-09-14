@@ -53,15 +53,15 @@ void wd_fprint_lo(const word_t w, const int b, FILE* const fstream)
 	for (word_t m=(WONE<<(b-1));m!=0;m>>=1) fputc(NZWORD(w&m)?'1':'0',fstream);
 }
 
-void wd_dft(const word_t w, dft_float_t* const wdftre, dft_float_t* const wdftim, const dft_float_t* const costab)
+void wd_dft(const word_t w, double* const wdftre, double* const wdftim, const double* const costab)
 {
-	const dft_float_t* const sintab = costab+WBITS*WBITS; // sin table is offset by m*m from cos table!
+	const double* const sintab = costab+WBITS*WBITS; // sin table is offset by m*m from cos table!
 	word_t wtest;
 	for (size_t i=0;i<WBITS;++i) wdftre[i] = 0.0;
 	wtest = w;
 	for (int j=0;j<WBITS;++j) {
 		if (WONE&(wtest>>=1)) { // test j-th bit
-			const dft_float_t* const ctabj = costab+WBITS*j;
+			const double* const ctabj = costab+WBITS*j;
 			for (int i=0;i<WBITS;++i) wdftre[i] += ctabj[i];
 		}
 	}
@@ -69,13 +69,13 @@ void wd_dft(const word_t w, dft_float_t* const wdftre, dft_float_t* const wdftim
 	wtest = w;
 	for (int j=0;j<WBITS;++j) {
 		if (WONE&(wtest>>=1)) { // test j-th bit
-			const dft_float_t* const stabj = sintab+WBITS*j;
+			const double* const stabj = sintab+WBITS*j;
 			for (int i=0;i<WBITS;++i) wdftim[i] += stabj[i];
 		}
 	}
 }
 
-void wd_autocov(const word_t w, dft_float_t* const wac)
+void wd_autocov(const word_t w, double* const wac)
 {
 	// note: reflect around WBITS/2
 	for (int i=0;i<WBITS;++i) {
@@ -83,7 +83,7 @@ void wd_autocov(const word_t w, dft_float_t* const wac)
 		int j = 0;
 		for (;j<WBITS-i;++j) iwaci += BITON(w,j+i      )&BITON(w,j);
 		for (;j<WBITS  ;++j) iwaci += BITON(w,j+i-WBITS)&BITON(w,j); // wrap
-		wac[i] = (dft_float_t)iwaci;
+		wac[i] = (double)iwaci;
 	}
 }
 
@@ -168,13 +168,13 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 	}
 }
 
-void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft_float_t* const dftim, dft_float_t* const dps, const dft_float_t* const costab)
+void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
 //	const size_t mh = m/2; // no problem: WBITS will always be even :-)
-	const dft_float_t* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
-	for (size_t i=0;i<m;++i) dftre[i] = (dft_float_t)0;
-	for (size_t i=0;i<m;++i) dftim[i] = (dft_float_t)0;
+	const double* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
+	for (size_t i=0;i<m;++i) dftre[i] = 0.0;
+	for (size_t i=0;i<m;++i) dftim[i] = 0.0;
 	for (size_t jj=0,jdx=0;jj<n;++jj) {
 		word_t wjj = w[jj];
 		for (int j=0;j<WBITS;++j,++jdx,wjj>>=1) {
@@ -186,14 +186,10 @@ void mw_dft(const size_t n, const word_t* const w, dft_float_t* const dftre, dft
 			}
 		}
 	}
-#ifdef DFT_SINGLE_PREC_FLOAT
-	if (dps != NULL) sqmagf(m,dps,dftre,dftim); // discrete power spectrum
-#else
 	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // discrete power spectrum
-#endif
 }
 
-void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac)
+void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 {
 	size_t idx = 0;
 	for (size_t ii=0;ii<n;++ii) {
@@ -210,7 +206,7 @@ void mw_autocov(const size_t n, const word_t* const w, dft_float_t* const ac)
 					}
 				}
 			}
-			ac[idx] = (dft_float_t)aci;
+			ac[idx] = (double)aci;
 		}
 	}
 }

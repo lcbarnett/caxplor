@@ -18,15 +18,9 @@ double entro2(const size_t n, const double* const x);
 
 // cosine and sin tables for DFT
 
-#ifdef DFT_SINGLE_PREC_FLOAT
-	typedef float  dft_float_t;
-#else
-	typedef double dft_float_t;
-#endif
+double* dft_cstab_alloc (const size_t n); // remember to free return!
 
-dft_float_t* dft_cstab_alloc (const size_t n); // remember to free return!
-
-void ac2dps(const size_t n, dft_float_t* const dps, const dft_float_t* const ac, const dft_float_t* const costab);
+void ac2dps(const size_t n, double* const dps, const double* const ac, const double* const costab);
 
 // misc stuff
 
