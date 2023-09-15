@@ -5,11 +5,12 @@
 void mw_automi_ref(const size_t n, const word_t* const w, double* const ami, double* const entro)
 {
 	const size_t m = n*WBITS;
+	const size_t q = m/2; // fine, because WBITS even!
 	const double fac = 1.0/(double)m;
 	const double p0 = fac*mw_nsetbits(n,w);
 	*entro = -xlog2x(p0)-xlog2x(1.0-p0);
 	double p[4];
-	for (size_t k=1;k<m;++k) {
+	for (size_t k=1;k<q;++k) {
 		int bin[4] = {0};
 		for (size_t j=0;j<m;++j) {
 			const size_t i   = j+k < m ? j+k : j+k-m; // wrap!
@@ -60,6 +61,7 @@ int sim_test(int argc, char* argv[])
 	printf("\nidx = %zu\n\n",idx);
 */
 	const size_t m = WBITS*n;
+	const size_t q = m/2; // fine, because WBITS even!
 
 	word_t* const w = mw_alloc(n);
 	mw_randomiseb(n,w,wbias,&rng);
@@ -67,8 +69,8 @@ int sim_test(int argc, char* argv[])
 	putchar('\n');
 	putchar('\n');
 
-	double* const amir = calloc(m,sizeof(double));
-	double* const amio = calloc(m,sizeof(double));
+	double* const amir = calloc(q-1,sizeof(double));
+	double* const amio = calloc(q-1,sizeof(double));
 
 	double entr, ento;
 
@@ -84,10 +86,9 @@ int sim_test(int argc, char* argv[])
 	te = timer();
 	printf("ami opt time = %8.6f\n",te-ts);
 
-	printf("\nami max abs diff = %.4e (%.4e)\n\n", maxabdiff(m-1,amir,amio),fabs(entr-ento));
+	printf("\nami max abs diff = %.4e (%.4e)\n\n", maxabdiff(q-1,amir,amio),fabs(entr-ento));
 
-// for (size_t i=0;i<m;++i) printf("%4zu  %8.6f  % 8.6f\n",i,amio[i],sqrt(1.0-pow(2.0,-amio[i])));
-for (size_t k=0;k<m-1;++k) printf("%4zu  % 8.6f  % 8.6f\n",k,amio[k],ento-amio[k]);
+for (size_t k=0;k<q-1;++k) printf("%4zu  % 8.6f  % 8.6f\n",k+1,amio[k],ento-amio[k]);
 
 	free(amio);
 	free(amir);

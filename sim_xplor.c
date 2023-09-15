@@ -38,7 +38,7 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
 	CLAP_CARG(dspfac,  double,  0.3,          "reduction factor for max DSP display (colourbar)");
-	CLAP_CARG(amifac,  double,  0.2,          "reduction factor for max AMI display (colourbar)");
+	CLAP_CARG(amice,   int,     0,            "auto-conditional entropy rather than auto-MI?");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
 	CLAP_CARG(gpx,     int,     32,           "horizontal gap in pixels");
@@ -62,6 +62,8 @@ int sim_xplor(int argc, char* argv[])
 	const size_t I = (nrows  == 0 ? nr      : nrows);
 	const size_t m = n*WBITS; // bits in a CA row
 	const size_t M = I*m;     // total bits in the CA
+	const size_t q = m/2;     // half  bits in a CA row (fine, because WBITS even!)
+	const size_t Q = I*q;     // half  bits in the CA
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -714,29 +716,28 @@ int sim_xplor(int argc, char* argv[])
 		case 'I': // calculate CA spatial auto-MI
 
 			printf("calculating CA auto-MI ... "); fflush(stdout);
-			double* const ami = malloc((M-I)*sizeof(double));
+			double* const ami = malloc((Q-I)*sizeof(double));
 			double* const ent = malloc(I*sizeof(double));
-
-			if (1) {
+			if (amice) {
 				for (size_t i=0,j=0;i<I;++i) {
-					for (size_t k=0;k<m-1;++k,++j) ami[j] = ent[i]-ami[j];
+					for (size_t k=0;k<q-1;++k,++j) ami[j] = ent[i]-ami[j];
 				}
 			}
-
 			if (filtering) ca_automi(I,n,fca,ami,ent); else ca_automi(I,n,ca,ami,ent);
-			const double amimax = max(M-I,ami);
+			const double amimax = max(Q-I,ami);
+			const double amimin = min(Q-I,ami);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
 			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
-			fprintf(gpc,"# set cbr [0:1]\n");
-			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
+			fprintf(gpc,"set cbr [0:*]\n");
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
-			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m-1,I);
-			gp_binary_write(gpc,M-I,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q-1,I);
+			gp_binary_write(gpc,Q-I,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-			printf("max. MI = %g\n",amimax);
+			printf("MI max = %g, min = %g\n",amimax,amimin);
 			free(ent);
 			free(ami);
 			// no need to redisplay image

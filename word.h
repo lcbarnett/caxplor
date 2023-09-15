@@ -20,8 +20,9 @@ typedef uint64_t word_t;
 #define WBITS  ((int)64)
 #define WBITS1 ((int)63)
 
-#define WONE   ((word_t)1)
 #define WZERO  ((word_t)0)
+#define WONE   ((word_t)1)
+#define WTWO   ((word_t)2)
 #define WONES  (~WZERO)
 #define WHIONE (WONE<<WBITS1)
 
@@ -49,7 +50,7 @@ typedef uint64_t word_t;
 #define FLIPBIT(w,p) ((w) ^= (WONE<<(p)))
 
 // Index for binning mutual information
-#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&(word_t)1)|((((wj)>>(j))<<1)&(word_t)2))
+#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&WONE)|((((wj)>>(j))<<1)&WTWO))
 
 // Usual caveats!
 #define SWAP(type,a,b) {type const a##tmp = a; a = b; b = a##tmp;}

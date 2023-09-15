@@ -214,10 +214,12 @@ void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 void mw_automi(const size_t n, const word_t* const w, double* const ami, double* const entro)
 {
 	const size_t m = n*WBITS;
+	const size_t q = m/2; // fine, because WBITS even!
 	const double fac = 1.0/(double)m;
-	const double p0 = fac*mw_nsetbits(n,w);
-	*entro = -xlog2x(p0)-xlog2x(1.0-p0);
-	for (size_t k=1;k<m;++k) {
+	int bin[2] = {0}; // zero-initialise
+	for (size_t j=0;j<m;++j) ++bin[BITON(w[j/WBITS],j%WBITS)];
+	*entro = -xlog2x(fac*(double)bin[0])-xlog2x(fac*(double)bin[1]);
+	for (size_t k=1;k<q;++k) {
 		int bin[4] = {0}; // zero-initialise
 		for (size_t j=0;j<m;++j) {
 			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
