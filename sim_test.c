@@ -1,1 +1,1 @@
-tests/sim_test_automi.c
+tests/sim_test_dft.c

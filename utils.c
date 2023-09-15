@@ -38,14 +38,18 @@ double* dft_cstab_alloc(const size_t n)
 	return costab;
 }
 
-void ac2dps(const size_t n, double* const dps, const double* const ac, const double* const costab)
+void ac2dps(const size_t m, double* const dps, const double* const ac, const double* const costab)
 {
-	for (size_t k=0; k<n; ++k) {
-		const size_t nk = n*k;
-		double sk = 0.0;
-		for (size_t j=0; j<n; ++j) sk += ac[j]*costab[nk+j];
-		dps[k] = sk;
+	const size_t q = m/2; // fine, because WBITS even!
+	for (size_t k=0; k<q; ++k) {
+		const size_t mk = m*k;
+		double dpsk = 0.0;
+		for (size_t j=0; j<q; ++j)    dpsk += ac[j  ]*costab[mk+j];
+		for (size_t j=q+1; j<=m; ++j) dpsk += ac[m-j]*costab[mk+j];
+//fprintf(stderr,"q = %4zu  k = %4zu\m",q,k);
+		dps[k] = dpsk;
 	}
+for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ac[k],dps[k]);
 }
 
 /*********************************************************************/
