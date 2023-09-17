@@ -292,7 +292,7 @@ void mw_print_bin  (const size_t n, const word_t* const w);
 
 void mw_dft     (const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab);
 void mw_autocov (const size_t n, const word_t* const w, double* const ac);
-void mw_automi  (const size_t n, const word_t* const w, double* const ami, double* const entro);
+void mw_automi  (const size_t n, const word_t* const w, double* const ami);
 
 /*********************************************************************/
 

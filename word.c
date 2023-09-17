@@ -171,7 +171,7 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	const double* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
 	for (size_t i=0;i<q;++i) dftre[i] = 0.0;
 	for (size_t i=0;i<q;++i) dftim[i] = 0.0;
@@ -182,7 +182,6 @@ void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* 
 				for (size_t i=0,ij=m*jdx;i<q;++i,++ij) {
 					dftre[i] += costab[ij];
 					dftim[i] -= sintab[ij];
-//fprintf(stderr,"q = %4zu  i = %4zu\n",q,i);
 				}
 			}
 		}
@@ -193,7 +192,7 @@ void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* 
 void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	size_t idx = 0;
 	for (size_t ii=0;ii<n;++ii) {
 		for (int i=0;(idx<q)&&(i<WBITS);++i,++idx) {
@@ -209,27 +208,26 @@ void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 					}
 				}
 			}
-//fprintf(stderr,"q = %4zu    idx = %4zu    aci = %4zu\n",q,idx,aci);
 			ac[idx] = (double)aci;
 		}
 	}
 }
 
-void mw_automi(const size_t n, const word_t* const w, double* const ami, double* const entro)
+void mw_automi(const size_t n, const word_t* const w, double* const ami)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	const double fac = 1.0/(double)m;
 	int bin[2] = {0}; // zero-initialise
 	for (size_t j=0;j<m;++j) ++bin[BITON(w[j/WBITS],j%WBITS)];
-	*entro = -xlog2x(fac*(double)bin[0])-xlog2x(fac*(double)bin[1]);
+	ami[0] = -xlog2x(fac*(double)bin[0])-xlog2x(fac*(double)bin[1]);
 	for (size_t k=1;k<q;++k) {
 		int bin[4] = {0}; // zero-initialise
 		for (size_t j=0;j<m;++j) {
 			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
 			++bin[MIIDX(w[i/WBITS],i%WBITS,w[j/WBITS],j%WBITS)];
 		}
-		ami[k-1] = 2.0*(*entro)+xlog2x(fac*(double)bin[0])+xlog2x(fac*(double)bin[1])+xlog2x(fac*(double)bin[2])+xlog2x(fac*(double)bin[3]);
+		ami[k] = 2.0*ami[0]+xlog2x(fac*(double)bin[0])+xlog2x(fac*(double)bin[1])+xlog2x(fac*(double)bin[2])+xlog2x(fac*(double)bin[3]);
 	}
 }
 

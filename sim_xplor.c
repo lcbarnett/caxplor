@@ -61,9 +61,8 @@ int sim_xplor(int argc, char* argv[])
 	const size_t n = (nwords == 0 ? nrwords : nwords);
 	const size_t I = (nrows  == 0 ? nr      : nrows);
 	const size_t m = n*WBITS; // bits in a CA row
-	const size_t M = I*m;     // total bits in the CA
-	const size_t q = m/2;     // half  bits in a CA row (fine, because WBITS even!)
-	const size_t Q = I*q;     // half  bits in the CA
+	const size_t q = m/2+1;   // half+1 bits in a CA row (fine, because WBITS even!)
+	const size_t Q = I*q;     // half+1 bits in the CA
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -694,19 +693,19 @@ int sim_xplor(int argc, char* argv[])
 		case 'S': // calculate CA spatial discrete power spectrum
 
 			printf("calculating CA spectrum ... "); fflush(stdout);
-			double* const dps = malloc(M*sizeof(double));
+			double* const dps = malloc(Q*sizeof(double));
 			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
-			scale(M,dps,1.0/((double)m*(double)m));
-			for (size_t i=0;i<I;++i) dps[m*i] = NAN; // suppress S(0)
+			scale(Q,dps,1.0/((double)m*(double)m));
+			for (size_t i=0;i<I;i+=q) dps[i] = NAN; // suppress S(0)
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set cbr [0:%g]\n",dspfac*max(M,dps));
-			fprintf(gpc,"set xr [+0.5:%g]\n",(double)(m/2)+0.5);
+			fprintf(gpc,"set cbr [0:%g]\n",dspfac*max(Q,dps));
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
-			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",m,I);
-			gp_binary_write(gpc,M,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
+			gp_binary_write(gpc,Q,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("done\n");
 			free(dps);
@@ -716,14 +715,14 @@ int sim_xplor(int argc, char* argv[])
 		case 'I': // calculate CA spatial auto-MI
 
 			printf("calculating CA auto-MI ... "); fflush(stdout);
-			double* const ami = malloc((Q-I)*sizeof(double));
-			double* const ent = malloc(I*sizeof(double));
+			double* const ami = malloc(Q*sizeof(double));
 			if (amice) {
-				for (size_t i=0,j=0;i<I;++i) {
-					for (size_t k=0;k<q-1;++k,++j) ami[j] = ent[i]-ami[j];
+				for (size_t i=0;i<I;i+=q) {
+					for (size_t k=1;k<q;++k) ami[i+k] = ami[i+k]-ami[i];
 				}
 			}
-			if (filtering) ca_automi(I,n,fca,ami,ent); else ca_automi(I,n,ca,ami,ent);
+			for (size_t i=0;i<I;i+=q) ami[i] = NAN; // suppress I(0)
+			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
 			const double amimax = max(Q-I,ami);
 			const double amimin = min(Q-I,ami);
 			gpc = gp_popen(NULL,NULL);
@@ -734,11 +733,10 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set cbr [0:*]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q+0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
-			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q-1,I);
-			gp_binary_write(gpc,Q-I,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
+			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
+			gp_binary_write(gpc,Q,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 			printf("MI max = %g, min = %g\n",amimax,amimin);
-			free(ent);
 			free(ami);
 			// no need to redisplay image
 			break;

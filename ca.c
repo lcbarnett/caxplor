@@ -98,11 +98,12 @@ void ca_part_count(const size_t I, const size_t n, const word_t* const ca, const
 void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
-	double* const dftre = calloc(m,sizeof(double));
-	double* const dftim = calloc(m,sizeof(double));
+	const size_t q = m/2+1; // fine, because WBITS even!
+	double* const dftre = calloc(q,sizeof(double));
+	double* const dftim = calloc(q,sizeof(double));
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const dpsr = dps+m*row;
+		double* const dpsr = dps+q*row;
 		mw_dft(n,car,dftre,dftim,dpsr,costab);
 	}
 	free(dftim);
@@ -112,21 +113,22 @@ void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* cons
 void ca_autocov(const size_t I, const size_t n, const word_t* const ca, double* const ac)
 {
 	const size_t m = n*WBITS;
+	const size_t q = m/2+1; // fine, because WBITS even!
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const acr = ac+m*row;
+		double* const acr = ac+q*row;
 		mw_autocov(n,car,acr);
 	}
 }
 
-void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami, double* const entro)
+void ca_automi(const size_t I, const size_t n, const word_t* const ca, double* const ami)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
-		double* const amir = ami+(q-1)*row;
-		mw_automi(n,car,amir,entro+row);
+		double* const amir = ami+q*row;
+		mw_automi(n,car,amir);
 	}
 }
 

@@ -5,7 +5,7 @@
 void mw_dft_ref(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	const double* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
 	for (size_t k=0;k<q;++k) {
 		const size_t mk = m*k;
@@ -26,7 +26,7 @@ void mw_dft_ref(const size_t n, const word_t* const w, double* const dftre, doub
 void mw_autocov_ref(const size_t n, const word_t* const w, double* const ac)
 {
 	const size_t m = n*WBITS;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 	for (size_t k=0;k<q;++k) {
 		word_t ack = 0;
 		for (size_t j=0;j<m;++j) {
@@ -56,7 +56,7 @@ int sim_test(int argc, char* argv[])
 	mt_seed(&rng,seed);
 
 	const size_t m = WBITS*n;
-	const size_t q = m/2; // fine, because WBITS even!
+	const size_t q = m/2+1; // fine, because WBITS even!
 
 	double* const costab = dft_cstab_alloc(m); // note: sin table is offset by m*m from cos table!
 
@@ -108,7 +108,7 @@ int sim_test(int argc, char* argv[])
 	printf("ac-ac max abs diff = %.4e\n\n", maxabdiff(q,acov1, acov ));
 	printf("ft-ac max abs diff = %.4e\n\n", maxabdiff(q,ftdps, acdps));
 
-for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ftdps[k],acdps[k]);
+//for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ftdps[k],acdps[k]);
 
 	if (logs) {
 		for (size_t i=0;i<q;++i) ftdps1[i] = ftdps1[i] > 0.0 ? log(ftdps1[i]) : NAN;
@@ -118,7 +118,7 @@ for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ftdps[k],acdps[k]);
 
 	if (disp) {
 		const double nfac = logs ? 1.0 : 1.0/(double)m;
-		const double ffac = M_PI/(double)q;
+		const double ffac = M_PI/(double)(q-1);
 		FILE* gp = gp_popen(NULL,"wxt size 640,960 nobackground enhanced title 'CA Explorer Test' persist raise");
 		fprintf(gp,"set xr [0.0:%g]\n",M_PI);
 		fprintf(gp,"set xtics ('0' 0.0,'{/Symbol p}/2' %g,'{/Symbol p}' %g)\n",M_PI/2.0,M_PI);
@@ -129,7 +129,7 @@ for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ftdps[k],acdps[k]);
 		fprintf(gp,"set ylabel \"DPS\"\n");
 		if (logs) fprintf(gp,"set logs y\n"); else fprintf(gp,"set yr [0:*]\n");
 		fprintf(gp,"plot \"-\" using 1:2 w lines t \"ft\",  \"-\" using 1:2 w lines t \"ac\"\n");
-		for (size_t i=1; i<q-1; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,nfac*ftdps[i]);
+		for (size_t i=1; i<q; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,nfac*ftdps[i]);
 //		fprintf(gp,"%g %g\n",ffac*(double)m,nfac*ftdps[0]);
 		fprintf(gp,"e\n");
 		for (size_t i=1; i<q; ++i) fprintf(gp,"%g %g\n",ffac*(double)i,nfac*acdps[i]);
