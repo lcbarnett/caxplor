@@ -697,17 +697,24 @@ int sim_xplor(int argc, char* argv[])
 			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
 			scale(Q,dps,1.0/((double)m*(double)m));
 			for (size_t i=0;i<I;i+=q) dps[i] = NAN; // suppress S(0)
+for (size_t i=0;i<I;++i) {
+	printf("row = %4zu\n",i);
+	for (size_t k=0;k<q;++k) printf("%16.8f\n",dps[q*i+k]);
+}
+			const double dpsmax = max(Q,dps);
+			const double dpsmin = min(Q,dps);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set cbr [0:%g]\n",dspfac*max(Q,dps));
+			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
+			fprintf(gpc,"set cbr [0:*]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
 			gp_binary_write(gpc,Q,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-			printf("done\n");
+			printf("DPS max = %g, min = %g\n",dpsmax,dpsmin);
 			free(dps);
 			// no need to redisplay image
 			break;
@@ -723,20 +730,20 @@ int sim_xplor(int argc, char* argv[])
 			}
 			for (size_t i=0;i<I;i+=q) ami[i] = NAN; // suppress I(0)
 			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
-			const double amimax = max(Q-I,ami);
-			const double amimin = min(Q-I,ami);
+			const double amimax = max(Q,ami);
+			const double amimin = min(Q,ami);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
 			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
 			fprintf(gpc,"set cbr [0:*]\n");
-			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q+0.5);
+			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
 			gp_binary_write(gpc,Q,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-			printf("MI max = %g, min = %g\n",amimax,amimin);
+			printf("AMI max = %g, min = %g\n",amimax,amimin);
 			free(ami);
 			// no need to redisplay image
 			break;
