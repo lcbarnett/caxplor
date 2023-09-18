@@ -37,7 +37,6 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(eiff,    int,     1,            "advance before entropy");
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
-	CLAP_CARG(dspfac,  double,  0.3,          "reduction factor for max DSP display (colourbar)");
 	CLAP_CARG(amice,   int,     0,            "auto-conditional entropy rather than auto-MI?");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
@@ -719,13 +718,20 @@ int sim_xplor(int argc, char* argv[])
 
 			printf("calculating CA auto-MI ... "); fflush(stdout);
 			double* const ami = malloc(Q*sizeof(double));
+			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
+
+const size_t nbins = 100;
+ulong bin[100];
+hist(Q,ami,nbins,bin);
+for (size_t b=0;b<nbins;++b) printf("%4zu\n",bin[b]);
+fflush(stdout);
+
 			if (amice) {
 				for (size_t i=0;i<Q;i+=q) {
-					for (size_t k=1;k<q;++k) ami[i+k] = ami[i+k]-ami[i];
+					for (size_t k=1;k<q;++k) ami[i+k] -= ami[i];
 				}
 			}
 			for (size_t i=0;i<Q;i+=q) ami[i] = NAN; // suppress I(0)
-			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
 			const double amimax = max(Q,ami);
 			const double amimin = min(Q,ami);
 			gpc = gp_popen(NULL,NULL);

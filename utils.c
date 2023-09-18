@@ -5,6 +5,18 @@
 #define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
 #define SMAXLEN 200
 
+void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin)
+{
+	const double a = min(n,x);
+	const double b = max(n,x);
+	const double f = (double)m/(b-a);
+	for (size_t i=0;i<m;++i) bin[i] = 0;
+	for (size_t k=0;k<n;++k) {
+		const ulong j =(ulong)(f*(x[k]-a));
+		++bin[j<m?j:m-1];
+	}
+}
+
 double entro2(const size_t n, const double* const x)
 {
 	double y = 0.0;
@@ -46,10 +58,8 @@ void ac2dps(const size_t m, double* const dps, const double* const ac, const dou
 		double dpsk = 0.0;
 		for (size_t j=0; j<q; ++j) dpsk += ac[j  ]*costab[mk+j];
 		for (size_t j=q; j<m; ++j) dpsk += ac[m-j]*costab[mk+j];
-//fprintf(stderr,"q = %4zu  k = %4zu\m",q,k);
 		dps[k] = dpsk;
 	}
-//for (size_t k=0;k<q;++k) printf("%4zu  % 16.4f  % 16.4f\n",k,ac[k],dps[k]);
 }
 
 /*********************************************************************/

@@ -24,6 +24,8 @@ void ac2dps(const size_t n, double* const dps, const double* const ac, const dou
 
 // misc stuff
 
+void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin);
+
 static inline float* double2float_alloc(const size_t n, const double* const x)
 {
 	float* const xf = malloc(n*sizeof(float)); // !!! remember to free !!!

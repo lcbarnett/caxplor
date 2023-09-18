@@ -33,7 +33,6 @@ void mw_autocov_ref(const size_t n, const word_t* const w, double* const ac)
 			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
 			ack += BITON(w[i/WBITS],i%WBITS)&BITON(w[j/WBITS],j%WBITS);
 		}
-//fprintf(stderr,"q = %4zu    k = %4zu    ack = %4zu\n",q,k,ack);
 		ac[k] = (double)ack;
 	}
 }
