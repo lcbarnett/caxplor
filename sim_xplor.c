@@ -696,18 +696,14 @@ int sim_xplor(int argc, char* argv[])
 			double* const dps = malloc(Q*sizeof(double));
 			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
 			scale(Q,dps,1.0/((double)m*(double)m));
-			for (size_t i=0;i<I;i+=q) dps[i] = NAN; // suppress S(0)
-for (size_t i=0;i<I;++i) {
-	printf("row = %4zu\n",i);
-	for (size_t k=0;k<q;++k) printf("%16.8f\n",dps[q*i+k]);
-}
+			for (size_t i=0;i<Q;i+=q) dps[i] = NAN; // suppress S(0)
 			const double dpsmax = max(Q,dps);
 			const double dpsmin = min(Q,dps);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
+			fprintf(gpc,"set palette defined (%s)\n",gp_palette[1]);
 			fprintf(gpc,"set cbr [0:*]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
@@ -724,11 +720,11 @@ for (size_t i=0;i<I;++i) {
 			printf("calculating CA auto-MI ... "); fflush(stdout);
 			double* const ami = malloc(Q*sizeof(double));
 			if (amice) {
-				for (size_t i=0;i<I;i+=q) {
+				for (size_t i=0;i<Q;i+=q) {
 					for (size_t k=1;k<q;++k) ami[i+k] = ami[i+k]-ami[i];
 				}
 			}
-			for (size_t i=0;i<I;i+=q) ami[i] = NAN; // suppress I(0)
+			for (size_t i=0;i<Q;i+=q) ami[i] = NAN; // suppress I(0)
 			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
 			const double amimax = max(Q,ami);
 			const double amimin = min(Q,ami);

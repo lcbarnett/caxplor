@@ -112,7 +112,8 @@ void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, con
 
 const char* gp_palette[] = {
 	"0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red'",
-	"0 'black', 3 'blue', 6 'green', 9 'yellow', 15 'red', 100 'dark-red'",
+	"0 'black', 1 'blue', 3 'green', 6 'yellow', 10 'orange', 15 'red', 100 'dark-red'",
+	"1 '#00008f', 8 '#0000ff', 24 '#00ffff', 40 '#ffff00', 56 '#ff0000', 64 '#800000'"
 };
 
 #undef GPDEFTERM
