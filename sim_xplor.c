@@ -720,11 +720,12 @@ int sim_xplor(int argc, char* argv[])
 			double* const ami = malloc(Q*sizeof(double));
 			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
 
-const size_t nbins = 100;
-ulong bin[100];
-hist(Q,ami,nbins,bin);
-for (size_t b=0;b<nbins;++b) printf("%4zu\n",bin[b]);
-fflush(stdout);
+			const size_t nbins = 1L+(ulong)ceil(log2((double)Q)); // Sturge's rule
+			ulong* const bin = calloc(Q,sizeof(double));          // zero-initialises
+			hist(Q,ami,nbins,bin);
+			for (size_t b=0;b<nbins;++b) printf("%4zu\n",bin[b]);
+			free(bin);
+			fflush(stdout);
 
 			if (amice) {
 				for (size_t i=0;i<Q;i+=q) {
