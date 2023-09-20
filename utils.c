@@ -62,6 +62,45 @@ void ac2dps(const size_t m, double* const dps, const double* const ac, const dou
 	}
 }
 
+// statistics
+
+double mean(const size_t n, double* const x, double* const var, const int unbiased)
+{
+	if (n == 1) {
+		if (var != NULL) *var = NAN;
+		return *x;
+	}
+	double sum = 0.0;
+	for (size_t i=0;i<n;++i) sum += x[i];
+	const double m = sum/(double)n;
+	if (var != NULL) {
+		double sum = 0.0;
+		for (size_t i=0;i<n;++i) {
+			double y = x[i]-m;
+			sum += y*y;
+		}
+		*var = sum/(double)(unbiased?n-1:n);
+	}
+	return m;
+}
+
+double median(const size_t n, double* const x, double* const mad, const int unsorted)
+{
+	// NOTE: changes data in x (unless already sorted and no MAD requested)
+	if (n == 1) {
+		if (mad != NULL) *mad = NAN;
+		return *x;
+	}
+	if (unsorted) qsort_double(n,x);
+	const size_t h = n/2;
+	const double med = (2*h == n ? (x[h-1]+x[h])/2.0 : x[h]);
+	if (mad != NULL) {
+		for (size_t i=0;i<n;++i) x[i] = fabs(x[i]-med);
+		*mad = median(n,x,NULL,1);
+	}
+	return med;
+}
+
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
@@ -123,7 +162,7 @@ void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, con
 const char* gp_palette[] = {
 	"0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red'",
 	"0 'black', 1 'blue', 3 'green', 6 'yellow', 10 'orange', 15 'red', 100 'dark-red'",
-	"1 '#00008f', 8 '#0000ff', 24 '#00ffff', 40 '#ffff00', 56 '#ff0000', 64 '#800000'"
+	"0 '#00008f', 2 '#0000ff', 4 '#00ffff', 8 '#ffff00', 24 '#ff0000', 128 '#800000'"
 };
 
 #undef GPDEFTERM

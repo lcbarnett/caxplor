@@ -22,7 +22,23 @@ double* dft_cstab_alloc (const size_t n); // remember to free return!
 
 void ac2dps(const size_t n, double* const dps, const double* const ac, const double* const costab);
 
-// misc stuff
+// sort scalar arrays
+
+#define QSORT_COMP(type) \
+static inline int qsort_##type##_comp(const void* const x1, const void* const x2) \
+{ \
+    return (*(const type* const)x2 > *(const type* const)x1 ? 1 : *(const type* const)x2 < *(const type* const)x1 ? -1 : 0); \
+}
+QSORT_COMP(double)
+QSORT_COMP(int)
+
+#define QSORT(type) \
+static inline void qsort_##type(const size_t n, type* const x) \
+{ \
+	qsort(x,n,sizeof(type),qsort_##type##_comp); \
+}
+QSORT(double)
+QSORT(int)
 
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin);
 
@@ -135,6 +151,11 @@ static inline double timer()
 {
 	return (double)clock()/(double)CLOCKS_PER_SEC;
 }
+
+// statistics
+
+double mean   (const size_t n, double* const x, double* const var, const int unbiased);
+double median (const size_t n, double* const x, double* const mad, const int unsorted);
 
 /*********************************************************************/
 /*                      Gnuplot stuff                                */

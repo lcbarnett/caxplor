@@ -719,34 +719,44 @@ int sim_xplor(int argc, char* argv[])
 			printf("calculating CA auto-MI ... "); fflush(stdout);
 			double* const ami = malloc(Q*sizeof(double));
 			if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
-
-			const size_t nbins = 1L+(ulong)ceil(log2((double)Q)); // Sturge's rule
-			ulong* const bin = calloc(Q,sizeof(double));          // zero-initialises
-			hist(Q,ami,nbins,bin);
-			for (size_t b=0;b<nbins;++b) printf("%4zu\n",bin[b]);
-			free(bin);
-			fflush(stdout);
-
 			if (amice) {
-				for (size_t i=0;i<Q;i+=q) {
-					for (size_t k=1;k<q;++k) ami[i+k] -= ami[i];
+				for (size_t r=0;r<Q;r+=q) {
+					for (size_t k=1;k<q;++k) ami[r+k] -= ami[r];
 				}
 			}
 			for (size_t i=0;i<Q;i+=q) ami[i] = NAN; // suppress I(0)
 			const double amimax = max(Q,ami);
 			const double amimin = min(Q,ami);
+			// calculate medians per distance
+			double* const amik = malloc(I*sizeof(double));
+			double* const med  = malloc(q*sizeof(double));
+			med[0] = NAN;
+			for (size_t k=1;k<q;++k) {
+				for (size_t r=0;r<I;++r) amik[r] = ami[q*r+k];
+				med[k] = median(I,amik,NULL,0);
+			}
+			// display AMI heat map
+			printf("AMI max = %g, min = %g\n",amimax,amimin);
 			gpc = gp_popen(NULL,NULL);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set palette defined (%s)\n",gp_palette[0]);
+			fprintf(gpc,"set palette defined (%s)\n",gp_palette[2]);
 			fprintf(gpc,"set cbr [0:*]\n");
 			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
 			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
 			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
 			gp_binary_write(gpc,Q,ami,gpipw); // NOTE: if gpipw set, ami is now unusable!
 			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-			printf("AMI max = %g, min = %g\n",amimax,amimin);
+			// display medians per distance box plot
+			gpc = gp_popen(NULL,NULL);
+			fprintf(gpc,"set xr [0.5:%g]\n",(double)q+0.5);
+			fprintf(gpc,"set style fill solid 1\n");
+			fprintf(gpc,"plot '-' u 1:2 w boxes not\n");
+			for (size_t k=1;k<q;++k) fprintf(gpc,"%4zu  %12.8f f\n",k,med[k]);
+			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
+			free(med);
+			free(amik);
 			free(ami);
 			// no need to redisplay image
 			break;
