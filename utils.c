@@ -132,8 +132,6 @@ void gp_fplot(const char* const gpname, const char* const gpdir)
 	if (system(gprun) == -1) PEEXIT("Gnuplot plot command \"%s\" failed\n",gprun);
 }
 
-#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
-
 FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
 {
 	FILE* const gpp = popen(GPCMD,"w");
@@ -146,8 +144,9 @@ FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xs
 void gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
 {
 	// if xsize != 0 and ysize == 0, xsize is a percentage scaling factor
-	const int xxsize = (xsize == 0 ? 640 : ysize==0 ? (int)(6.4*(double)xsize) : xsize);
-	const int yysize = (ysize == 0 ? xsize!=0 ? (int)(4.8*(double)xsize) : ysize : 480);
+	const int scale = (xsize!=0)&(ysize==0);
+	const int xxsize = (xsize == 0 ? 640 : scale ? (int)(6.4*(double)xsize) : xsize);
+	const int yysize = (ysize == 0 ? scale ? (int)(4.8*(double)xsize) : 480 : ysize);
 	if (gpterm == NULL || strcmp(gpterm,"wxt") == 0) fprintf(gp,"set term \"wxt\" size %d,%d nobackground enhanced title \"%s\" \n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
 	else if (strcmp(gpterm,"qt" ) == 0)              fprintf(gp,"set term \"qt\" size %d,%d title \"%s\" enhanced\n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
 	else if (strcmp(gpterm,"x11") == 0)              fprintf(gp,"set term \"x11\" title \"%s\" enhanced size %d,%d\n",gptitle==NULL?GPDEFTITLE:gptitle,xxsize,yysize);
@@ -174,8 +173,9 @@ void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, con
 }
 
 const char* gp_palette[] = {
-	"0 'black', 3 'blue', 6 'green', 9 'yellow', 12 'orange', 15 'red', 100 'dark-red'",
-	"0 'black', 1 'blue', 3 'green', 6 'yellow', 10 'orange', 15 'red', 100 'dark-red'",
+	"0 '#000090', 1 '#000fff', 2 '#0090ff', 3 '#0fffee',  4 '#90ff70',   5 '#ffee00',    6 '#ff7000', 7 '#ee0000', 8 '#7f0000'", // Matlab-like :-)
+	"0 'black',   3 'blue',    6 'green',   9 'yellow',  12 'orange',   15 'red',      100 'dark-red'",
+	"0 'black',   1 'blue',    3 'green',   6 'yellow',  10 'orange',   15 'red',      100 'dark-red'",
 	"0 '#00008f', 2 '#0000ff', 4 '#00ffff', 8 '#ffff00', 24 '#ff0000', 128 '#800000'"
 };
 
