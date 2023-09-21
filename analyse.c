@@ -208,7 +208,7 @@ void caana_automi
 	fprintf(gp,"# set size ratio -1\n");
 	fprintf(gp,"unset xtics\n");
 	fprintf(gp,"unset ytics\n");
-	fprintf(gp,"set palette defined (%s)\n",gp_palette[0]);
+	fprintf(gp,"set palette defined (%s)\n",gp_palette[1]);
 	fprintf(gp,"set logs cb\n");
 	fprintf(gp,"set cbr [1e-6:1]\n");
 	fprintf(gp,"set xr [+0.5:%g]\n",(double)q-0.5);

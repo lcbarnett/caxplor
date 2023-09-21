@@ -172,8 +172,9 @@ void gp_binary_write(FILE* const gpp, const size_t n, const double* const x, con
 	}
 }
 
-const char* gp_palette[] = {
+const char* gp_palette[] = { // see also https://github.com/Gnuplotting/gnuplot-palettes
 	"0 '#000090', 1 '#000fff', 2 '#0090ff', 3 '#0fffee',  4 '#90ff70',   5 '#ffee00',    6 '#ff7000', 7 '#ee0000', 8 '#7f0000'", // Matlab-like :-)
+	"0 '#FFF7EC', 1 '#FEE8C8', 2 '#FDD49E', 3 '#FDBB84',  4 '#FC8D59',   5 '#EF6548',    6 '#D7301F', 7 '#990000'", // OrRd
 	"0 'black',   3 'blue',    6 'green',   9 'yellow',  12 'orange',   15 'red',      100 'dark-red'",
 	"0 'black',   1 'blue',    3 'green',   6 'yellow',  10 'orange',   15 'red',      100 'dark-red'",
 	"0 '#00008f', 2 '#0000ff', 4 '#00ffff', 8 '#ffff00', 24 '#ff0000', 128 '#800000'"
