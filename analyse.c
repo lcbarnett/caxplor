@@ -44,7 +44,7 @@ void caana_automi
 
 	// display AMI heat map
 	printf("AMI max = %g, min = %g\n",amimax,amimin);
-	FILE* const gp1 = gp_popen(NULL,NULL);
+	FILE* const gp1 = gp_popen(NULL,NULL,"Auto-MI: heat map",260,0);
 	fprintf(gp1,"set size ratio -1\n");
 	fprintf(gp1,"unset xtics\n");
 	fprintf(gp1,"unset ytics\n");
@@ -57,9 +57,13 @@ void caana_automi
 	if (pclose(gp1) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
 
 	// display medians per distance box plot
-	FILE* const gp2 = gp_popen(NULL,NULL);
+	FILE* const gp2 = gp_popen(NULL,NULL,"Auto-MI: medians",2480,480);
 	fprintf(gp2,"set xr [0.5:%g]\n",(double)q+0.5);
+	fprintf(gp2,"set xtics 100\n");
+	fprintf(gp2,"set xlabel \"distance\"\n");
+	fprintf(gp2,"set ylabel \"median MI\"\n");
 	fprintf(gp2,"set style fill solid 1\n");
+	fprintf(gp2,"set grid\n");
 	fprintf(gp2,"plot '-' u 1:2 w boxes not\n");
 	for (size_t k=1;k<q;++k) fprintf(gp2,"%4zu  %12.8f f\n",k,med[k]);
 	if (pclose(gp2) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");

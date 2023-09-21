@@ -621,7 +621,7 @@ int sim_xplor(int argc, char* argv[])
 				for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\n",m,H[m]);
 			}
 			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
-			gpc = gp_fopen(gpename,gpdir,NULL);
+			gpc = gp_fopen(gpename,gpdir,NULL,"CA rule entropy",0,0);
 			fprintf(gpc,"datfile = \"%s.dat\"\n",gpename);
 			fprintf(gpc,"set title \"{/:Bold CA entropy}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
 			if (rule->filt != NULL) {
@@ -673,7 +673,7 @@ int sim_xplor(int argc, char* argv[])
 			gpd = gp_dopen(gptname,gpdir);
 			for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\t%g\t%g\n",m,H[m],Hf[m],Tf[m]);
 			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
-			gpc = gp_fopen(gptname,gpdir,NULL);
+			gpc = gp_fopen(gptname,gpdir,NULL,"CA rule 1-lag Dynamical Dependence",0,0);
 			fprintf(gpc,"datfile = \"%s.dat\"\n",gptname);
 			fprintf(gpc,"set title \"{/:Bold CA dynamical dependence}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
 			fprintf(gpc,", filter "); rt_fprint_id(rule->filt->size,rule->filt->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(rule->filt->size,rule->filt->tab));
@@ -699,7 +699,7 @@ int sim_xplor(int argc, char* argv[])
 			for (size_t i=0;i<Q;i+=q) dps[i] = NAN; // suppress S(0)
 			const double dpsmax = max(Q,dps);
 			const double dpsmin = min(Q,dps);
-			gpc = gp_popen(NULL,NULL);
+			gpc = gp_popen(NULL,NULL,"Discrete power spectrum",0,0);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");

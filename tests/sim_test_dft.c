@@ -118,7 +118,7 @@ int sim_test(int argc, char* argv[])
 	if (disp) {
 		const double nfac = logs ? 1.0 : 1.0/(double)m;
 		const double ffac = M_PI/(double)(q-1);
-		FILE* gp = gp_popen(NULL,"wxt size 640,960 nobackground enhanced title 'CA Explorer Test' persist raise");
+		FILE* gp = gp_popen(NULL,NULL,"CA Xplorer Test",150,0);
 		fprintf(gp,"set xr [0.0:%g]\n",M_PI);
 		fprintf(gp,"set xtics ('0' 0.0,'{/Symbol p}/2' %g,'{/Symbol p}' %g)\n",M_PI/2.0,M_PI);
 		fprintf(gp,"set grid lt -1 lc \"grey\"\n");

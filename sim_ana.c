@@ -51,7 +51,7 @@ int sim_ana(int argc, char* argv[])
 	}
 
 	char* const gpfile = sm_printf(sm,"caana_B%d_m%d_i%d_S%zu",rsiz,m,iters,S);
-	FILE* const gp = gp_fopen(gpfile,NULL,NULL);
+	FILE* const gp = gp_fopen(gpfile,NULL,NULL,NULL,0,0);
 	fprintf(gp,"set title 'CA entropy vs bias (rsiz = %d, m = %d, iters = %d, samples = %zu)'\n",rsiz,m,iters,S);
 	fprintf(gp,"set xlabel 'rule bits set'\n");
 	fprintf(gp,"set ylabel 'normalised entropy'\n");

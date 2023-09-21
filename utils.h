@@ -161,12 +161,13 @@ double median (const size_t n, double* const x, double* const mad, const int uns
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
 
-FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm);
 FILE* gp_dopen(const char* const gpname, const char* const gpdir);
-void  gp_fplot(const char* const gpname, const char* const gpdir, const char* const gpcmd);
-
-FILE* gp_popen(const char* const gpcmd,  const char* const gpterm);
+FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
+FILE* gp_popen(const char* const gpcmd,  const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
 void  gp_pclose(FILE* const gpp);
+void  gp_fplot(const char* const gpname, const char* const gpdir, const char* const gpcmd);
+void  gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
+
 
 // WARNING: if 'inplace' is set, x is unusable after calling (but should still be freed if allocated on heap)!
 void  gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace);

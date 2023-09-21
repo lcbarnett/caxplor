@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
+#define GPDEFTITLE "CA Xplorer"
 #define SMAXLEN 200
 
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin)
@@ -105,13 +105,13 @@ double median(const size_t n, double* const x, double* const mad, const int unso
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
 
-FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm)
+FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
 {
 	char gpcmdfile[SMAXLEN];
 	snprintf(gpcmdfile,SMAXLEN,"%s/%s.gp",gpdir == NULL ? "/tmp" : gpdir,gpname);
 	FILE* const gpc = fopen(gpcmdfile,"w");
 	if (gpc == NULL) PEEXIT("failed to open Gnuplot command file \"%s\"\n",gpcmdfile);
-	fprintf(gpc,"set term %s\n",gpterm == NULL ? GPDEFTERM : gpterm);
+	gp_setterm(gpc,gpterm,gptitle,xsize,ysize);
 	return gpc;
 }
 
@@ -131,13 +131,27 @@ void gp_fplot(const char* const gpname, const char* const gpdir, const char* con
 	if (system(gprun) == -1) PEEXIT("Gnuplot plot command \"%s\" failed\n",gprun);
 }
 
-FILE* gp_popen(const char* const gpcmd, const char* const gpterm)
+#define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
+
+FILE* gp_popen(const char* const gpcmd, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
 {
-	FILE* const gpp = popen(gpcmd == NULL ? "gnuplot" : gpcmd,"w");
+	FILE* const gpp = popen(gpcmd == NULL ? "gnuplot -persist" : gpcmd,"w");
 	if (gpp == NULL) PEEXIT("failed to open pipe to Gnuplot\n");
 	if (setvbuf(gpp,NULL,_IOLBF,0) != 0) PEEXIT("failed to line-buffer pipe to Gnuplot\n");
-	fprintf(gpp,"set term %s\n",gpterm == NULL ? GPDEFTERM : gpterm);
+	gp_setterm(gpp,gpterm,gptitle,xsize,ysize);
 	return gpp;
+}
+
+void gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
+{
+	// if xsize != 0 and ysize == 0, xsize is a percentage scaling factor
+	const int xxsize = (xsize == 0 ? 640 : ysize==0 ? (int)(6.4*(double)xsize) : xsize);
+	const int yysize = (ysize == 0 ? xsize!=0 ? (int)(4.8*(double)xsize) : ysize : 480);
+printf("\nsize = %d x %d\n\n",xxsize,yysize);
+	if (gpterm == NULL || strcmp(gpterm,"wxt") == 0) fprintf(gp,"set term \"wxt\" size %d,%d nobackground enhanced title \"%s\" \n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
+	else if (strcmp(gpterm,"qt" ) == 0)              fprintf(gp,"set term \"qt\" size %d,%d title \"%s\" enhanced\n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
+	else if (strcmp(gpterm,"x11") == 0)              fprintf(gp,"set term \"x11\" title \"%s\" enhanced size %d,%d\n",gptitle==NULL?GPDEFTITLE:gptitle,xxsize,yysize);
+	else EEXIT("Unknown Gnuplot terminal \"%s\"",gptitle);
 }
 
 void gp_pclose(FILE* const gpp)
@@ -165,4 +179,5 @@ const char* gp_palette[] = {
 	"0 '#00008f', 2 '#0000ff', 4 '#00ffff', 8 '#ffff00', 24 '#ff0000', 128 '#800000'"
 };
 
-#undef GPDEFTERM
+#undef GPDEFTITLE
+#undef SMAXLEN
