@@ -29,16 +29,19 @@ static inline int qsort_##type##_comp(const void* const x1, const void* const x2
 { \
     return (*(const type* const)x2 > *(const type* const)x1 ? 1 : *(const type* const)x2 < *(const type* const)x1 ? -1 : 0); \
 }
-QSORT_COMP(double)
-QSORT_COMP(int)
 
 #define QSORT(type) \
 static inline void qsort_##type(const size_t n, type* const x) \
 { \
 	qsort(x,n,sizeof(type),qsort_##type##_comp); \
 }
-QSORT(double)
-QSORT(int)
+
+#define QSORT_DEFINE(type) QSORT_COMP(type) QSORT(type)
+
+// instantiate the ones you want
+
+QSORT_DEFINE(double)
+QSORT_DEFINE(int)
 
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin);
 
