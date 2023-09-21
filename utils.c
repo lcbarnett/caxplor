@@ -3,6 +3,7 @@
 #include "utils.h"
 
 #define GPDEFTITLE "CA Xplorer"
+#define GPCMD "gnuplot -p"
 #define SMAXLEN 200
 
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin)
@@ -124,18 +125,18 @@ FILE* gp_dopen(const char* const gpname, const char* const gpdir)
 	return gpd;
 }
 
-void gp_fplot(const char* const gpname, const char* const gpdir, const char* const gpcmd)
+void gp_fplot(const char* const gpname, const char* const gpdir)
 {
 	char gprun[SMAXLEN];
-	snprintf(gprun,SMAXLEN,"cd %s && %s %s.gp",gpdir == NULL ? "/tmp" : gpdir,gpcmd == NULL ? "gnuplot -p" : gpcmd,gpname);
+	snprintf(gprun,SMAXLEN,"cd %s && " GPCMD " %s.gp",gpdir == NULL ? "/tmp" : gpdir,gpname);
 	if (system(gprun) == -1) PEEXIT("Gnuplot plot command \"%s\" failed\n",gprun);
 }
 
 #define GPDEFTERM "wxt size 640,480 nobackground enhanced title 'Gnuplot: CA Xplorer' persist raise"
 
-FILE* gp_popen(const char* const gpcmd, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
+FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xsize, const int ysize)
 {
-	FILE* const gpp = popen(gpcmd == NULL ? "gnuplot -persist" : gpcmd,"w");
+	FILE* const gpp = popen(GPCMD,"w");
 	if (gpp == NULL) PEEXIT("failed to open pipe to Gnuplot\n");
 	if (setvbuf(gpp,NULL,_IOLBF,0) != 0) PEEXIT("failed to line-buffer pipe to Gnuplot\n");
 	gp_setterm(gpp,gpterm,gptitle,xsize,ysize);
@@ -147,7 +148,6 @@ void gp_setterm(FILE* const gp, const char* const gpterm, const char* const gpti
 	// if xsize != 0 and ysize == 0, xsize is a percentage scaling factor
 	const int xxsize = (xsize == 0 ? 640 : ysize==0 ? (int)(6.4*(double)xsize) : xsize);
 	const int yysize = (ysize == 0 ? xsize!=0 ? (int)(4.8*(double)xsize) : ysize : 480);
-printf("\nsize = %d x %d\n\n",xxsize,yysize);
 	if (gpterm == NULL || strcmp(gpterm,"wxt") == 0) fprintf(gp,"set term \"wxt\" size %d,%d nobackground enhanced title \"%s\" \n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
 	else if (strcmp(gpterm,"qt" ) == 0)              fprintf(gp,"set term \"qt\" size %d,%d title \"%s\" enhanced\n",xxsize,yysize,gptitle==NULL?GPDEFTITLE:gptitle);
 	else if (strcmp(gpterm,"x11") == 0)              fprintf(gp,"set term \"x11\" title \"%s\" enhanced size %d,%d\n",gptitle==NULL?GPDEFTITLE:gptitle,xxsize,yysize);
@@ -180,4 +180,5 @@ const char* gp_palette[] = {
 };
 
 #undef GPDEFTITLE
+#undef GPCMD
 #undef SMAXLEN

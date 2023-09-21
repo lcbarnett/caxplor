@@ -163,9 +163,9 @@ double median (const size_t n, double* const x, double* const mad, const int uns
 
 FILE* gp_dopen(const char* const gpname, const char* const gpdir);
 FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
-FILE* gp_popen(const char* const gpcmd,  const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
+FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
 void  gp_pclose(FILE* const gpp);
-void  gp_fplot(const char* const gpname, const char* const gpdir, const char* const gpcmd);
+void  gp_fplot(const char* const gpname, const char* const gpdir);
 void  gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
 
 

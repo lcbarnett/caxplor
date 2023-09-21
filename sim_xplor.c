@@ -644,7 +644,7 @@ int sim_xplor(int argc, char* argv[])
 				fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy'\n");
 			}
 			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
-			gp_fplot(gpename,gpdir,NULL);
+			gp_fplot(gpename,gpdir);
 			// no need to redisplay image
 			break;
 
@@ -686,7 +686,7 @@ int sim_xplor(int argc, char* argv[])
 			fprintf(gpc,"set ytics 0.1\n");
 			fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy', datfile u 1:4 w lines t 'rule/filter DD'\n");
 			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
-			gp_fplot(gptname,gpdir,NULL);
+			gp_fplot(gptname,gpdir);
 			// no need to redisplay image
 			break;
 
@@ -699,7 +699,7 @@ int sim_xplor(int argc, char* argv[])
 			for (size_t i=0;i<Q;i+=q) dps[i] = NAN; // suppress S(0)
 			const double dpsmax = max(Q,dps);
 			const double dpsmin = min(Q,dps);
-			gpc = gp_popen(NULL,NULL,"Discrete power spectrum",0,0);
+			gpc = gp_popen(NULL,"Discrete power spectrum",0,0);
 			fprintf(gpc,"set size ratio -1\n");
 			fprintf(gpc,"unset xtics\n");
 			fprintf(gpc,"unset ytics\n");

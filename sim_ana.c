@@ -67,7 +67,7 @@ int sim_ana(int argc, char* argv[])
 	}
 	fprintf(gp,"e\n");
 	if (fclose(gp) == -1) PEEXIT("failed to close Gnuplot data file\n");
-	gp_fplot(gpfile,NULL,NULL);
+	gp_fplot(gpfile,NULL);
 
 	// free storage
 	free(H);
