@@ -99,7 +99,7 @@ word_t* mw_alloc(const size_t n)
 
 }
 
-word_t* mw_alloc_copy(const size_t n, const word_t* const wsrc)
+word_t* mw_copy_alloc(const size_t n, const word_t* const wsrc)
 {
 	word_t* const wdest = malloc(n*sizeof(word_t));
 	PASSERT(wdest != NULL,"memory allocation failed");

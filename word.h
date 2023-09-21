@@ -144,13 +144,13 @@ void wd_autocov(const word_t w, double* const wac);
 
 word_t* mw_alloc(const size_t n);
 
-word_t* mw_alloc_copy(const size_t n, const word_t* const wsrc);
-
 static inline void mw_copy(const size_t n, word_t* const wdest, const word_t* const wsrc)
 {
 	// NOTE: wdest and wsrc must not overlap!!!
 	memcpy(wdest,wsrc,n*sizeof(word_t));
 }
+
+word_t* mw_copy_alloc(const size_t n, const word_t* const wsrc);
 
 static inline void mw_zero(const size_t n, word_t* const w)
 {

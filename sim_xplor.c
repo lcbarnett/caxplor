@@ -36,10 +36,10 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(pmax,    size_t,  100000,       "maximum period");
 	CLAP_CARG(emmax,   int,     20,           "maximum sequence length for entropy calculation");
 	CLAP_CARG(eiff,    int,     1,            "advance before entropy");
-	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
-	CLAP_CARG(amice,   int,     0,            "auto-conditional entropy rather than auto-MI?");
+	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
+	CLAP_CARG(amice,   int,     0,            "auto-conditional entropy rather than auto-MI?");
 	CLAP_CARG(ppc,     int,     1,            "cell display size in pixels");
 	CLAP_CARG(gpx,     int,     32,           "horizontal gap in pixels");
 	CLAP_CARG(gpy,     int,     32,           "vertical gap in pixels");
@@ -60,9 +60,6 @@ int sim_xplor(int argc, char* argv[])
 
 	const size_t n = (nwords == 0 ? nrwords : nwords);
 	const size_t I = (nrows  == 0 ? nr      : nrows);
-	const size_t m = n*WBITS; // bits in a CA row
-	const size_t q = m/2+1;   // half+1 bits in a CA row (fine, because WBITS even!)
-	const size_t Q = I*q;     // half+1 bits in the CA
 
 	puts("\n---------------------------------------------------------------------------------------\n");
 
@@ -116,23 +113,11 @@ int sim_xplor(int argc, char* argv[])
 	int quit  = 0; // time to go
 	int imseq = 0; // image sequence number
 
-	// entropy storage
-	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
-	double H[hlen];
-	for (int m=0; m<hlen; ++m) H[m] = NAN;
-	double Hf[hlen];
-	for (int m=0; m<hlen; ++m) Hf[m] = NAN;
-	double Tf[hlen];
-	for (int m=0; m<hlen; ++m) Tf[m] = NAN;
-
 	// DFT tables
 	double* const costab = dft_cstab_alloc(n*WBITS);
 
 	const size_t mslen = 10;
 	char modestr[] = "exploring";
-
-	// Gnuplot file streams
-	FILE *gpd, *gpc;
 
 	// terminal usagestr
 	char usagestr[] =
@@ -588,64 +573,12 @@ int sim_xplor(int argc, char* argv[])
 
 		case 'p': // calculate CA period
 
-			printf("calculating CA period... "); fflush(stdout);
-			mw_copy(ncawords,wca,ca); // copy to working CA
-			mw_run(prff,n,wca,rule->size,rule->tab);
-			int prot;
-			const size_t period = ca_period(pmax,n,wca,rule->size,rule->tab,&prot);
-			if (period == pmax) {
-				printf("> %zu iterations\n",pmax);
-			}
-			else {
-				printf("%zu iterations, twist = %d\n",period,prot);
-			}
-			// no need to redisplay image
+			caana_period(n,I,ca,rule,prff,pmax);
 			break;
 
 		case 'e': // calculate CA/filter entropy
 
-			printf("calculating CA entropy");
-			for (int m=rule->size; m<=emmax; ++m) {
-				H[m] = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
-				if (rule->filt != NULL) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
-				putchar('.'); fflush(stdout);
-			}
-			char gpename[] = "caentro";
-			gpd = gp_dopen(gpename,gpdir);
-			if (filtering && rule->filt != NULL) {
-				printf(" rule entropy = %8.6f, filter entropy = %8.6f\n",H[emmax],Hf[emmax]);
-				for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\t%g\n",m,H[m],Hf[m]);
-			}
-			else {
-				printf(" rule entropy = %8.6f\n",H[emmax]);
-				for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\n",m,H[m]);
-			}
-			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
-			gpc = gp_fopen(gpename,gpdir,NULL,"CA rule entropy",0,0);
-			fprintf(gpc,"datfile = \"%s.dat\"\n",gpename);
-			fprintf(gpc,"set title \"{/:Bold CA entropy}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
-			if (rule->filt != NULL) {
-				fprintf(gpc,", filter "); rt_fprint_id(rule->filt->size,rule->filt->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(rule->filt->size,rule->filt->tab));
-			}
-			else {
-				fprintf(gpc,"\"\n");
-			}
-			fprintf(gpc,"set xlabel \"CA length (bits)\"\n");
-			fprintf(gpc,"set ylabel \"normalised entropy\"\n");
-			fprintf(gpc,"set key right bottom Left rev\n");
-			fprintf(gpc,"set grid\n");
-			fprintf(gpc,"set xr [%d:%d]\n",rule->size,emmax);
-			fprintf(gpc,"set yr [0:1]\n");
-			fprintf(gpc,"set ytics 0.1\n");
-			if (filtering && rule->filt != NULL) {
-				fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy'\n");
-			}
-			else {
-				fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy'\n");
-			}
-			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
-			gp_fplot(gpename,gpdir);
-			// no need to redisplay image
+			caana_entro(rule,filtering,emmax,eiff,gpdir);
 			break;
 
 		case 't': // calculate CA/filter 1-lag DD
@@ -658,66 +591,17 @@ int sim_xplor(int argc, char* argv[])
 				printf("no filter!\n");
 				break;
 			}
-			printf("calculating CA/filter dynamical dependence");
-			for (int m=rule->size; m<=emmax; ++m) {
-				H[m]  = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
-				Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
-				putchar('.'); fflush(stdout);
-			}
-			for (int m=rule->size; m<=tmmax; ++m) {
-				Tf[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag)/(double)m;
-				putchar('.'); fflush(stdout);
-			}
-			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
-			char gptname[] = "cadd";
-			gpd = gp_dopen(gptname,gpdir);
-			for (int m=rule->size; m<hlen; ++m) fprintf(gpd,"%d\t%g\t%g\t%g\n",m,H[m],Hf[m],Tf[m]);
-			if (fclose(gpd) == -1) PEEXIT("failed to close Gnuplot data file\n");
-			gpc = gp_fopen(gptname,gpdir,NULL,"CA rule 1-lag Dynamical Dependence",0,0);
-			fprintf(gpc,"datfile = \"%s.dat\"\n",gptname);
-			fprintf(gpc,"set title \"{/:Bold CA dynamical dependence}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
-			fprintf(gpc,", filter "); rt_fprint_id(rule->filt->size,rule->filt->tab,gpc); fprintf(gpc," ({/Symbol l} = %g)\"\n",rt_lambda(rule->filt->size,rule->filt->tab));
-			fprintf(gpc,"set xlabel \"CA length (bits)\"\n");
-			fprintf(gpc,"set ylabel \"normalised entropy\"\n");
-			fprintf(gpc,"set key right bottom Left rev\n");
-			fprintf(gpc,"set grid\n");
-			fprintf(gpc,"set xr [%d:%d]\n",rule->size,emmax);
-			fprintf(gpc,"set yr [0:1]\n");
-			fprintf(gpc,"set ytics 0.1\n");
-			fprintf(gpc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy', datfile u 1:4 w lines t 'rule/filter DD'\n");
-			if (fclose(gpc) == -1) PEEXIT("failed to close Gnuplot command file\n");
-			gp_fplot(gptname,gpdir);
-			// no need to redisplay image
+			caana_dd(rule,filtering,emmax,eiff,tmmax,tiff,tlag,gpdir);
 			break;
 
 		case 'S': // calculate CA spatial discrete power spectrum
 
-			printf("calculating CA spectrum ... "); fflush(stdout);
-			double* const dps = malloc(Q*sizeof(double));
-			if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
-			scale(Q,dps,1.0/((double)m*(double)m));
-			for (size_t i=0;i<Q;i+=q) dps[i] = NAN; // suppress S(0)
-			const double dpsmax = max(Q,dps);
-			const double dpsmin = min(Q,dps);
-			gpc = gp_popen(NULL,"Discrete power spectrum",0,0);
-			fprintf(gpc,"set size ratio -1\n");
-			fprintf(gpc,"unset xtics\n");
-			fprintf(gpc,"unset ytics\n");
-			fprintf(gpc,"set palette defined (%s)\n",gp_palette[1]);
-			fprintf(gpc,"set cbr [0:*]\n");
-			fprintf(gpc,"set xr [+0.5:%g]\n",(double)q-0.5);
-			fprintf(gpc,"set yr [-0.5:%g]\n",(double)I-0.5);
-			fprintf(gpc,"plot '-' binary array=(%zu,%zu) flip=y with image not\n",q,I);
-			gp_binary_write(gpc,Q,dps,gpipw); // NOTE: if gpipw set, dps is now unusable!
-			if (pclose(gpc) == EOF) PEEXIT("failed to close pipe to Gnuplot\n");
-			printf("DPS max = %g, min = %g\n",dpsmax,dpsmin);
-			free(dps);
-			// no need to redisplay image
+			caana_dps(n,I,ca,fca,filtering,costab,gpipw);
 			break;
 
 		case 'I': // calculate CA spatial auto-MI
 
-			caana_automi(n,I,q,Q,ca,fca,filtering,amice,gpipw);
+			caana_automi(n,I,ca,fca,filtering,amice,gpipw);
 			break;
 
 		case 'h': // display usage
