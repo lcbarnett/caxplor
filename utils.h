@@ -27,7 +27,7 @@ void ac2dps(const size_t n, double* const dps, const double* const ac, const dou
 #define QSORT_COMP(type) \
 static inline int qsort_##type##_comp(const void* const x1, const void* const x2) \
 { \
-    return (*(const type* const)x2 > *(const type* const)x1 ? 1 : *(const type* const)x2 < *(const type* const)x1 ? -1 : 0); \
+    return (*(const type* const)x2 < *(const type* const)x1 ? 1 : *(const type* const)x2 > *(const type* const)x1 ? -1 : 0); \
 }
 
 #define QSORT(type) \
@@ -157,8 +157,10 @@ static inline double timer()
 
 // statistics
 
-double mean   (const size_t n, double* const x, double* const var, const int unbiased);
-double median (const size_t n, double* const x, double* const mad, const int unsorted);
+double mean      (const size_t n, double* const x, double* const var, const int unbiased);
+double median    (const size_t n, double* const x, double* const mad, const int unsorted);
+void   quantiles (const size_t n, double* const x, const size_t Q, double* const q, const int unsorted);
+size_t FDrule    (const size_t n, double* const x, const int unsorted);
 
 /*********************************************************************/
 /*                      Gnuplot stuff                                */

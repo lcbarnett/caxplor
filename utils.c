@@ -67,8 +67,9 @@ void ac2dps(const size_t m, double* const dps, const double* const ac, const dou
 
 double mean(const size_t n, double* const x, double* const var, const int unbiased)
 {
+	ASSERT(n > 0,"Empty array!");
 	if (n == 1) {
-		if (var != NULL) *var = NAN;
+		if (var != NULL) *var = NAN; // undefined
 		return *x;
 	}
 	double sum = 0.0;
@@ -88,8 +89,9 @@ double mean(const size_t n, double* const x, double* const var, const int unbias
 double median(const size_t n, double* const x, double* const mad, const int unsorted)
 {
 	// NOTE: changes data in x (unless already sorted and no MAD requested)
+	ASSERT(n > 0,"Empty array!");
 	if (n == 1) {
-		if (mad != NULL) *mad = NAN;
+		if (mad != NULL) *mad = NAN; // undefined
 		return *x;
 	}
 	if (unsorted) qsort_double(n,x);
@@ -100,6 +102,35 @@ double median(const size_t n, double* const x, double* const mad, const int unso
 		*mad = median(n,x,NULL,1);
 	}
 	return med;
+}
+
+void quantiles(const size_t n, double* const x, const size_t Q, double* const q, const int unsorted)
+{
+	// NOTE: changes data in x (unless already sorted)
+	//
+	// q must be a double array of size Q+1
+	// q[0] is the minimum, q[Q] the maximum of x
+	ASSERT(n > 0,"Empty array!");
+	if (n <  Q) {for (size_t k=0;k<=Q;++k) q[k] = NAN;  return;} // undefined
+	if (unsorted) qsort_double(n,x);
+	if (n == Q) {for (size_t k=0;k<=Q;++k) q[k] = x[k]; return;} // trivial
+	const double z = (double)n/(double)Q;
+	q[0] = x[0];
+	for (size_t k=1;k<Q;++k) {
+		const double u = (double)k*z-0.5;
+		const size_t i = (size_t)floor(u);
+		const double v = u-(double)i;
+		q[k] = (1.0-v)*x[i]+v*x[i+1];
+	}
+	q[Q] = x[n-1];
+}
+
+size_t FDrule(const size_t n, double* const x, const int unsorted) // Freedman-Diaconis rule for #(histogram bins)
+{
+	// NOTE: changes data in x (unless already sorted)
+	double q[5];
+	quantiles(n,x,4,q,unsorted); // quartiles
+	return (size_t)ceil((cbrt((double)n)/2.0)*((q[4]-q[0])/(q[3]-q[1])));
 }
 
 /*********************************************************************/
