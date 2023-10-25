@@ -20,8 +20,9 @@ typedef uint64_t word_t;
 #define WBITS  ((int)64)
 #define WBITS1 ((int)63)
 
-#define WONE   ((word_t)1)
 #define WZERO  ((word_t)0)
+#define WONE   ((word_t)1)
+#define WTWO   ((word_t)2)
 #define WONES  (~WZERO)
 #define WHIONE (WONE<<WBITS1)
 
@@ -49,7 +50,7 @@ typedef uint64_t word_t;
 #define FLIPBIT(w,p) ((w) ^= (WONE<<(p)))
 
 // Index for binning mutual information
-#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&(word_t)1)|((((wj)>>(j))<<1)&(word_t)2))
+#define MIIDX(wi,i,wj,j) ((((wi)>>(i))&WONE)|((((wj)>>(j))<<1)&WTWO))
 
 // Usual caveats!
 #define SWAP(type,a,b) {type const a##tmp = a; a = b; b = a##tmp;}
@@ -143,13 +144,13 @@ void wd_autocov(const word_t w, double* const wac);
 
 word_t* mw_alloc(const size_t n);
 
-word_t* mw_alloc_copy(const size_t n, const word_t* const wsrc);
-
 static inline void mw_copy(const size_t n, word_t* const wdest, const word_t* const wsrc)
 {
 	// NOTE: wdest and wsrc must not overlap!!!
 	memcpy(wdest,wsrc,n*sizeof(word_t));
 }
+
+word_t* mw_copy_alloc(const size_t n, const word_t* const wsrc);
 
 static inline void mw_zero(const size_t n, word_t* const w)
 {

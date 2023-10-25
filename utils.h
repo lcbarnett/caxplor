@@ -22,7 +22,28 @@ double* dft_cstab_alloc (const size_t n); // remember to free return!
 
 void ac2dps(const size_t n, double* const dps, const double* const ac, const double* const costab);
 
-// misc stuff
+// sort scalar arrays
+
+#define QSORT_COMP(type) \
+static inline int qsort_##type##_comp(const void* const x1, const void* const x2) \
+{ \
+    return (*(const type* const)x2 < *(const type* const)x1 ? 1 : *(const type* const)x2 > *(const type* const)x1 ? -1 : 0); \
+}
+
+#define QSORT(type) \
+static inline void qsort_##type(const size_t n, type* const x) \
+{ \
+	qsort(x,n,sizeof(type),qsort_##type##_comp); \
+}
+
+#define QSORT_DEFINE(type) QSORT_COMP(type) QSORT(type)
+
+// instantiate the ones you want
+
+QSORT_DEFINE(double)
+QSORT_DEFINE(int)
+
+void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin);
 
 static inline float* double2float_alloc(const size_t n, const double* const x)
 {
@@ -134,19 +155,29 @@ static inline double timer()
 	return (double)clock()/(double)CLOCKS_PER_SEC;
 }
 
+// statistics
+
+double mean      (const size_t n, double* const x, double* const var, const int unbiased);
+double median    (const size_t n, double* const x, double* const mad, const int unsorted);
+void   quantiles (const size_t n, double* const x, const size_t Q, double* const q, const int unsorted);
+size_t FDrule    (const size_t n, double* const x, const int unsorted);
+
 /*********************************************************************/
 /*                      Gnuplot stuff                                */
 /*********************************************************************/
 
-FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm);
 FILE* gp_dopen(const char* const gpname, const char* const gpdir);
-void  gp_fplot(const char* const gpname, const char* const gpdir, const char* const gpcmd);
-
-FILE* gp_popen(const char* const gpcmd,  const char* const gpterm);
+FILE* gp_fopen(const char* const gpname, const char* const gpdir, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
+FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
 void  gp_pclose(FILE* const gpp);
+void  gp_fplot(const char* const gpname, const char* const gpdir);
+void  gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
 
-// WARNING: if 'inplace' is set, x becomes unusable!
+
+// WARNING: if 'inplace' is set, x is unusable after calling (but should still be freed if allocated on heap)!
 void  gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace);
+
+extern const char* gp_palette[];
 
 /*********************************************************************/
 /*                      Useful macros                                */

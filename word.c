@@ -99,7 +99,7 @@ word_t* mw_alloc(const size_t n)
 
 }
 
-word_t* mw_alloc_copy(const size_t n, const word_t* const wsrc)
+word_t* mw_copy_alloc(const size_t n, const word_t* const wsrc)
 {
 	word_t* const wdest = malloc(n*sizeof(word_t));
 	PASSERT(wdest != NULL,"memory allocation failed");
@@ -171,29 +171,31 @@ void mw_run(const size_t I, const size_t n, word_t* const w, const int B, const 
 void mw_dft(const size_t n, const word_t* const w, double* const dftre, double* const dftim, double* const dps, const double* const costab)
 {
 	const size_t m = n*WBITS;
-//	const size_t mh = m/2; // no problem: WBITS will always be even :-)
+	const size_t q = m/2+1; // fine, because WBITS even!
 	const double* const sintab = costab+m*m; // sin table is offset by m*m from cos table!
-	for (size_t i=0;i<m;++i) dftre[i] = 0.0;
-	for (size_t i=0;i<m;++i) dftim[i] = 0.0;
+	for (size_t i=0;i<q;++i) dftre[i] = 0.0;
+	for (size_t i=0;i<q;++i) dftim[i] = 0.0;
 	for (size_t jj=0,jdx=0;jj<n;++jj) {
 		word_t wjj = w[jj];
 		for (int j=0;j<WBITS;++j,++jdx,wjj>>=1) {
 			if (WONE&wjj) {
-				for (size_t i=0,ij=m*jdx;i<m;++i,++ij) {
+				for (size_t i=0,ij=m*jdx;i<q;++i,++ij) {
 					dftre[i] += costab[ij];
 					dftim[i] -= sintab[ij];
 				}
 			}
 		}
 	}
-	if (dps != NULL) sqmag(m,dps,dftre,dftim);  // discrete power spectrum
+	if (dps != NULL) sqmag(q,dps,dftre,dftim);  // discrete power spectrum
 }
 
 void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 {
+	const size_t m = n*WBITS;
+	const size_t q = m/2+1; // fine, because WBITS even!
 	size_t idx = 0;
 	for (size_t ii=0;ii<n;++ii) {
-		for (int i=0;i<WBITS;++i,++idx) {
+		for (int i=0;(idx<q)&&(i<WBITS);++i,++idx) {
 			word_t aci = 0;
 			size_t jii = ii;
 			int    ji  = i;
@@ -214,18 +216,18 @@ void mw_autocov(const size_t n, const word_t* const w, double* const ac)
 void mw_automi(const size_t n, const word_t* const w, double* const ami)
 {
 	const size_t m = n*WBITS;
+	const size_t q = m/2+1; // fine, because WBITS even!
 	const double fac = 1.0/(double)m;
-	const double p0 = fac*mw_nsetbits(n,w);
-	const double entro = -xlog2x(p0)-xlog2x(1.0-p0);
-	int bin[4];
-	ami[0] = entro;
-	for (size_t k=1;k<m;++k) {
-		for (size_t r=0;r<4;++r) bin[r] = 0;
+	int bin[2] = {0}; // zero-initialise
+	for (size_t j=0;j<m;++j) ++bin[BITON(w[j/WBITS],j%WBITS)];
+	ami[0] = -xlog2x(fac*(double)bin[0])-xlog2x(fac*(double)bin[1]);
+	for (size_t k=1;k<q;++k) {
+		int bin[4] = {0}; // zero-initialise
 		for (size_t j=0;j<m;++j) {
 			const size_t i = j+k < m ? j+k : j+k-m; // wrap!
 			++bin[MIIDX(w[i/WBITS],i%WBITS,w[j/WBITS],j%WBITS)];
 		}
-		ami[k] = 2.0*entro+xlog2x(fac*(double)bin[0])+xlog2x(fac*(double)bin[1])+xlog2x(fac*(double)bin[2])+xlog2x(fac*(double)bin[3]);
+		ami[k] = 2.0*ami[0]+xlog2x(fac*(double)bin[0])+xlog2x(fac*(double)bin[1])+xlog2x(fac*(double)bin[2])+xlog2x(fac*(double)bin[3]);
 	}
 }
 

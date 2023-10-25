@@ -13,11 +13,15 @@ int main(int argc, char* argv[])
 		if (strcmp(argv[1],"ana"  )  == 0) return sim_ana   (argc-2,argv+2);
 		if (strcmp(argv[1],"bmark")  == 0) return sim_bmark (argc-2,argv+2);
 		if (strcmp(argv[1],"test" )  == 0) return sim_test  (argc-2,argv+2);
+#ifdef HAVE_X11
+		if (strcmp(argv[1],"xplor")  == 0) return sim_xplor (argc-2,argv+2);
+#endif
 	}
 
-	// default
-	return sim_xplor(argc-1,argv+1);
+	if (argc > 1)
+		fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
+	else
+		fprintf(stderr,"%s: must specify simulation\n",argv[0]);
 
-	fprintf(stderr,"%s: unknown simulation '%s'\n",argv[0],argv[1]);
 	return EXIT_FAILURE;
 }
