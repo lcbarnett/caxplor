@@ -16,12 +16,10 @@ int main(int argc, char* argv[])
 #ifdef HAVE_X11
 		if (strcmp(argv[1],"xplor")  == 0) return sim_xplor (argc-2,argv+2);
 #endif
-	}
-
-	if (argc > 1)
 		fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
-	else
+	}
+	else {
 		fprintf(stderr,"%s: must specify simulation\n",argv[0]);
-
+	}
 	return EXIT_FAILURE;
 }
