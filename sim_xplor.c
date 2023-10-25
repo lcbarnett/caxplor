@@ -1,8 +1,16 @@
+#ifndef HAVE_X11
+	#error "You shouldn't be trying to compile this if you have specified X11"
+#endif
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
 #include "screen_metrics.h"
 #include "ca.h"
+#ifdef HAVE_GD
+	#include "cagd.h"
+#endif
+#include "caX11.h"
 #include "rtab.h"
 #include "clap.h"
 #include "strman.h"
@@ -46,12 +54,11 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(wdec,    int,     0,            "window decorations?");
 	CLAP_CARG(gpdir,   cstr,   "/tmp",        "Gnuplot file directory");
 	CLAP_CARG(gpipw,   int,     1,            "In-place binary write for Gnuplot");
+#ifdef HAVE_GD
 	CLAP_CARG(imdir,   cstr,   "/tmp",        "image file directory");
 	CLAP_CARG(imfmt,   cstr,   "png",         "image format (png, bmp, gif, jpg/jpeg)");
+#endif
 	puts("---------------------------------------------------------------------------------------\n");
-
-	const size_t strbuflen = 100;
-	char strbuf[strbuflen+1];
 
 	// get number of CA rows/cols/words to fit screen
 
@@ -111,7 +118,12 @@ int sim_xplor(int argc, char* argv[])
 	// control variables
 	int filtering = 0; // xplorer mode
 	int quit  = 0; // time to go
+
+#ifdef HAVE_GD
+	const size_t strbuflen = 100;
+	char strbuf[strbuflen+1];
 	int imseq = 0; // image sequence number
+#endif
 
 	// DFT tables
 	double* const costab = dft_cstab_alloc(n*WBITS);
@@ -140,7 +152,9 @@ int sim_xplor(int argc, char* argv[])
 		"t : plot 1-lag DD of CA rule and filter rule\n"
 		"p : calculate CA period\n"
 		"s : save CA/filter id to file\n"
+#ifdef HAVE_GD
 		"w : write CA image to file\n"
+#endif
 		"S : calculate CA spatial discrete power spectrum\n"
 		"I : calculate CA spatial auto-MI\n"
 		"q : (or ESC) exit program\n";
@@ -555,6 +569,8 @@ int sim_xplor(int argc, char* argv[])
 			// no need to redisplay image
 			break;
 
+#ifdef HAVE_GD
+
 		case 'w': // write CA/filtered CA image to file
 
 			++imseq;
@@ -570,6 +586,7 @@ int sim_xplor(int argc, char* argv[])
 			putchar('\n');
 			// no need to redisplay image
 			break;
+#endif
 
 		case 'p': // calculate CA period
 

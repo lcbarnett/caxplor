@@ -1,16 +1,37 @@
-SRC = main.c word.c ca.c rtab.c screen_metrics.c analyse.c sim_xplor.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
+WITH_GD  = 1
+WITH_X11 = 1
+
+SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
+
+ifdef WITH_GD
+	SRC += cagd.c
+endif
+
+ifdef WITH_X11
+	SRC += caX11.c sim_xplor.c screen_metrics.c
+endif
+
 OBJ = $(patsubst %.c,.%.o,$(SRC))
 DEP = $(patsubst %.o,%.d,$(OBJ))
 BIN = caxplor
 
 # Note: _GNU_SOURCE need for sincos function
 
-OFLAGS = -march=native -O3 -flto
-WFLAGS = -Wall -Werror -Wextra -Wconversion -Winline -Wno-unused-parameter
-DFLAGS = -D_DEFAULT_SOURCE -DUNSAFE_ZPIXMAP -D_GNU_SOURCE
-CFLAGS = $(OFLAGS) $(WFLAGS) $(DFLAGS)
+OFLAGS  = -march=native -O3 -flto
+WFLAGS  = -Wall -Werror -Wextra -Wconversion -Winline -Wno-unused-parameter
+DFLAGS  = -D_DEFAULT_SOURCE -DUNSAFE_ZPIXMAP -D_GNU_SOURCE
+CFLAGS  = $(OFLAGS) $(WFLAGS) $(DFLAGS)
+LDFLAGS = $(OFLAGS) -lm
 
-LDFLAGS = $(OFLAGS) -lgd -lX11 -lm
+ifdef WITH_GD
+	DFLAGS  += -DHAVE_GD
+	LDFLAGS += -lgd
+endif
+
+ifdef WITH_X11
+	DFLAGS  += -DHAVE_X11
+	LDFLAGS += -lX11
+endif
 
 REPDEP = sed -i -e '1s,\($*\)\.o[ :]*,\1.o \.$*.d: ,' \.$*.d
 
