@@ -1,7 +1,7 @@
 WITH_GD  = 1
 WITH_X11 = 1
 
-SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
+SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_dd.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
 
 ifdef WITH_GD
 	SRC += cagd.c

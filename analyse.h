@@ -14,27 +14,6 @@ void caana_period
 	const size_t        pmax
 );
 
-void caana_entro
-(
-	const rtl_t* const rule,
-	const int          filtering,
-	const int          emmax,
-	const int          eiff,
-	const char*  const gpdir
-);
-
-void caana_dd
-(
-	const rtl_t* const rule,
-	const int          filtering,
-	const int          emmax,
-	const int          eiff,
-	const int          tmmax,
-	const int          tiff,
-	const int          tlag,
-	const char*  const gpdir
-);
-
 void caana_dps
 (
 	const size_t        n,
