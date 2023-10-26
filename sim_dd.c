@@ -1,6 +1,5 @@
 #include "clap.h"
 #include "rtab.h"
-#include "analyse.h"
 
 int sim_dd(int argc, char* argv[])
 {
@@ -29,7 +28,7 @@ int sim_dd(int argc, char* argv[])
 	printf("Done\n\n");
 
 	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
-	double H[hlen];
+	double H [hlen];
 	double Hf[hlen];
 	double Tf[hlen];
 
