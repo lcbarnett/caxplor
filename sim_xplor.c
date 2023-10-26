@@ -665,7 +665,7 @@ int sim_xplor(int argc, char* argv[])
 			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
 			char gptname[] = "cadd";
 			FILE* const gptd = gp_dopen(gptname,gpdir);
-			for (int m=rule->size; m<hlen; ++m) fprintf(gptd,"%d\t%g\t%g\t%g\n",m,H[m],Hf[m],Tf[m]);
+			for (int m=0; m<hlen; ++m) fprintf(gptd,"%d\t%g\t%g\t%g\n",m,H[m],Hf[m],Tf[m]);
 			if (fclose(gptd) == -1) PEEXIT("failed to close Gnuplot data file\n");
 			FILE* const gptc = gp_fopen(gptname,gpdir,NULL,"CA rule 1-lag Dynamical Dependence",0,0);
 			fprintf(gptc,"datfile = \"%s.dat\"\n",gptname);

@@ -14,6 +14,7 @@ int sim_dd(int argc, char* argv[])
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
+	CLAP_CARG(odir,    cstr,   "/tmp",        "output file directory");
 	puts("---------------------------------------------------------------------------------------\n");
 
 	// Read in rule/filter rtids
@@ -28,23 +29,49 @@ int sim_dd(int argc, char* argv[])
 	printf("Done\n\n");
 
 	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
-	double H [hlen];
+	double Hr[hlen];
 	double Hf[hlen];
-	double Tf[hlen];
+	double DD[hlen];
 
-	// Run through rule/filter rtids calculating te
+	const size_t ofnlen = 1000;
+	char ofname[ofnlen+1];
+
+	// Run through rule/filter rtids lists calculating entropy and DD
 	for (; rule != NULL; rule = rule->next) {
-		for (int m=0; m<hlen; ++m) H[m] = NAN;
-		for (int m=rule->size; m<=emmax; ++m) H[m]  = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
+		printf("rule id = "); rt_print_id(rule->size,rule->tab);
+		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
+		for (int m=rule->size; m<=emmax; ++m) {
+			Hr[m] = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
+			putchar('.'); fflush(stdout);
+		}
+		printf(" rule entropy ≈ %8.6f\n",Hr[emmax]);
 		for (; rule->filt != NULL; rule->filt = rule->filt->next) {
-			printf("rule id = "); rt_print_id(rule->size,rule->tab);
-			printf(", filter id = "); rt_print_id(rule->filt->size,rule->filt->tab);
+			printf("\tfilter id = "); rt_print_id(rule->filt->size,rule->filt->tab);
 			for (int m=0; m<hlen; ++m) Hf[m] = NAN;
-			for (int m=rule->filt->size; m<=emmax; ++m) Hf[m]  = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
+			for (int m=rule->filt->size; m<=emmax; ++m) {
+				Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
+				putchar('.'); fflush(stdout);
+			}
+			printf(" filter entropy ≈ %8.6f",Hf[emmax]); fflush(stdout);
 			const int mmin = rule->size > rule->filt->size ? rule->size : rule->filt->size;
-			for (int m=0; m<hlen; ++m) Tf[m] = NAN;
-			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag)/(double)m;
-			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
+			for (int m=0; m<hlen; ++m) DD[m] = NAN;
+			for (int m=mmin; m<=tmmax; ++m) {
+				DD[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag)/(double)m;
+				putchar('.'); fflush(stdout);
+			}
+			printf(" DD ≈ %8.6f",DD[tmmax]);
+
+			snprintf(ofname,ofnlen,"%s/cadd_",odir);
+			rt_sprint_id(rule->size,rule->tab,ofnlen,ofname);
+			strncat(ofname,"_",1);
+			rt_sprint_id(rule->filt->size,rule->filt->tab,ofnlen,ofname);
+			strncat(ofname,".dat",4);
+
+			FILE* const dfs = fopen(ofname,"w");
+			if (dfs == NULL) PEEXIT("failed to open output file \"%s\"\n",ofname);
+			for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,Hr[m],Hf[m],DD[m]);
+			if (fclose(dfs) == -1) PEEXIT("failed to close output file\n");
+			printf(" : written \"%s\"\n",ofname);
 		}
 	}
 

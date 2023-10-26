@@ -88,7 +88,7 @@ void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nr
 void    rt_fprint      (const int size, const word_t* const tab, FILE* const fstream);
 void    rt_fprint_id   (const int size, const word_t* const tab, FILE* const fstream);
 void    rt_print       (const int size, const word_t* const tab);
-char*   rt_sprint_id   (const int size, const word_t* const tab); // allocates C string; remember to free!
+size_t  rt_sprint_id   (const int size, const word_t* const tab, size_t sbuflen, char* const str);
 void    rt_print_id    (const int size, const word_t* const tab);
 void    rt_entro_hist  (const int size, const word_t* const tab,  const int m, const int iff, ulong* const bin);
 double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff);

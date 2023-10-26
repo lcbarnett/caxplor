@@ -316,14 +316,16 @@ void rt_print_id(const int size, const word_t* const tab)
 	rt_fprint_id(size,tab,stdout);
 }
 
-char* rt_sprint_id(const int size, const word_t* const tab) // allocates C string; remember to free!
+size_t rt_sprint_id(const int size, const word_t* const tab, size_t sbuflen, char* const str)
 {
+	// Note: *concatenates* rtid to string; string buffer must be long enough to accommodate it!
 	const size_t S = POW2(size);
 	const size_t C = rt_hexchars(size);
-	char* const str = malloc((C+1)*sizeof(char));
+	const size_t slen = strlen(str);
+	ASSERT(slen+C < sbuflen,"string buffer too short!"); // note extra char for NUL terminator
 	word_t u = 0;
 	int i = 0;
-	size_t c = 0;
+	size_t c = slen;
 	for (size_t r=0;r<S;++r) {
 		PUTBIT(u,i,tab[r]);
 		if ((++i)%4 == 0) {
@@ -332,8 +334,8 @@ char* rt_sprint_id(const int size, const word_t* const tab) // allocates C strin
 			i = 0;
 		}
 	}
-	str[c] = '\0'; // null terminator
-	return str;
+	str[c] = '\0'; // null terminate
+	return C; // number of chars written not including NUL terminator
 }
 
 word_t* rt_fread_id(FILE* const fstream, int* const size)  // allocates rule table on sucess - remember to free!
