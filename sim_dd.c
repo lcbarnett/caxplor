@@ -26,14 +26,20 @@ int sim_dd(int argc, char* argv[])
 	rtl_t* rule = rtl_fread(irtfs);
 	ASSERT(rule != NULL,"No valid rtids found in input file!");
 	if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
-	printf("Done\n\n");
+
+	size_t nrules;
+	size_t* const nfilts = rtl_nitems(rule,&nrules);
+	printf("number of rules = %zu, filters =",nrules);
+	for (size_t k=0;k<nrules;++k) printf(" %zu",nfilts[k]);
+	puts("\n");
+
 
 	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
 	double Hr[hlen];
 	double Hf[hlen];
 	double DD[hlen];
 
-	const size_t ofnlen = 1000;
+	const size_t ofnlen = 999;
 	char ofname[ofnlen+1];
 
 	// Run through rule/filter rtids lists calculating entropy and DD
@@ -74,6 +80,9 @@ int sim_dd(int argc, char* argv[])
 			printf(" : written \"%s\"\n",ofname);
 		}
 	}
+
+	free(nfilts);
+	rtl_free(rule);
 
 	return EXIT_SUCCESS;
 }

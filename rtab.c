@@ -98,6 +98,19 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 	return NULL;
 }
 
+size_t* rtl_nitems(const rtl_t* const rule, size_t* const nrules)
+{
+	*nrules = 0;
+	if (rule == NULL) return NULL;
+	for (const rtl_t* r = rule; r != NULL; r = r->next) ++(*nrules);
+	size_t* const nfilts = calloc(*nrules,sizeof(size_t)); // zero-initialises
+	size_t* nf = nfilts;
+	for (const rtl_t* r = rule; r != NULL; r = r->next,++nf) {
+		for (const rtl_t* f = r->filt; f != NULL; f = f->next)  ++(*nf);
+	}
+	return nfilts;
+}
+
 rtl_t* rtl_fread(FILE* rtfs)
 {
 	// A .rt (rtids) file should have lines of the form:
@@ -161,7 +174,7 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 		token = strtok(NULL,delimit);
 		if (token == NULL) { // no filter id
-			printf(" : no filter id\n");
+			putchar('\n');
 			continue;
 		}
 
