@@ -17,20 +17,22 @@ typedef struct {
 	int    tlag;
 } targ_t;
 
-void* compfun(void *arg)
+void* compfun(void* arg)
 {
-	targ_t* targ = (targ_t*)arg;
+	const targ_t* const targ = (targ_t*)arg;
 
 	const size_t tnum  = targ->tnum+1;
 	const int rsize = targ->rule->size;
 	const int fsize = targ->filt->size;
 	const word_t* const rtab = targ->rule->tab;
 	const word_t* const ftab = targ->filt->tab;
-	const int emmax = targ->emmax;
-	const int eiff  = targ->eiff;
-	const int tmmax = targ->tmmax;
-	const int tiff  = targ->tiff;
-	const int tlag  = targ->tlag;
+	const int emmax  = targ->emmax;
+	const int eiff   = targ->eiff;
+	const int tmmax  = targ->tmmax;
+	const int tiff   = targ->tiff;
+	const int tlag   = targ->tlag;
+	const int hlen   = (emmax > tmmax ? emmax : tmmax)+1;
+	const int rfsize = rsize > fsize ? rsize : fsize;
 
 	printf("thread %2zu : rule id = ",tnum);
 	rt_print_id(rsize,rtab);
@@ -38,7 +40,6 @@ void* compfun(void *arg)
 	rt_print_id(fsize,ftab);
 	putchar('\n'); fflush(stdout);
 
-	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
 	double Hr[hlen];
 	double Hf[hlen];
 	double DD[hlen];
@@ -52,7 +53,6 @@ void* compfun(void *arg)
 	for (int m=fsize; m<=emmax; ++m) {
 		Hf[m] = rt_entro(fsize,ftab,m,eiff)/(double)m;
 	}
-	const int rfsize = rsize > fsize ? rsize : fsize;
 	for (int m=rfsize; m<=tmmax; ++m) {
 		DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag)/(double)m;
 	}
@@ -103,6 +103,8 @@ int sim_dd_mt(int argc, char* argv[])
 	ASSERT(rule != NULL,"No valid rtids found in input file!");
 	if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
 
+	// Calculate number of rules/filters (number of threads = total number of filters)
+
 	size_t nrules;
 	size_t* const nfilts = rtl_nitems(rule,&nrules);
 	size_t ntfilts = 0;
@@ -111,14 +113,16 @@ int sim_dd_mt(int argc, char* argv[])
 	for (size_t k=0;k<nrules;++k) printf(" %zu",nfilts[k]);
 	printf(" (total = %zu)\n\n",ntfilts);
 
+	// initialize and set thread joinable
+
 	pthread_t threads[ntfilts];
 	pthread_attr_t attr;
 
-	// initialize and set thread joinable
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
 
-	// kick off computation threads
+	// set up parameter struct array
+
 	targ_t targ[ntfilts];
 	for (size_t tnum=0; tnum<ntfilts; ++tnum) {
 		targ[tnum].tnum  = tnum;
@@ -128,6 +132,8 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].tiff  = tiff;
 		targ[tnum].tlag  = tlag;
 	}
+
+	// kick off computation threads
 	size_t tnum = 0;
 	for (; rule != NULL; rule = rule->next) {
 		for (; rule->filt != NULL; rule->filt = rule->filt->next,++tnum) {
