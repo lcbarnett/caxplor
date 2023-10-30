@@ -1,1 +1,0 @@
-sim_dd_mt.c

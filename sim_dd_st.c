@@ -1,7 +1,7 @@
 #include "clap.h"
 #include "rtab.h"
 
-int sim_dd(int argc, char* argv[])
+int sim_dd_st(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.

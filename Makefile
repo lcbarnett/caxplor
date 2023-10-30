@@ -1,7 +1,8 @@
-WITH_GD  = 1
-WITH_X11 = 1
+WITH_GD       = 1
+WITH_X11      = 1
+WITH_PTHREADS = 1
 
-SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_dd.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
+SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
 
 ifdef WITH_GD
 	SRC += cagd.c
@@ -9,6 +10,12 @@ endif
 
 ifdef WITH_X11
 	SRC += caX11.c sim_xplor.c screen_metrics.c
+endif
+
+ifdef WITH_PTHREADS
+	SRC += sim_dd_mt.c
+else
+	SRC += sim_dd_st.c
 endif
 
 OBJ = $(patsubst %.c,.%.o,$(SRC))
@@ -31,6 +38,11 @@ endif
 ifdef WITH_X11
 	DFLAGS  += -DHAVE_X11
 	LDFLAGS += -lX11
+endif
+
+ifdef WITH_PTHREADS
+	DFLAGS  += -DHAVE_PTHREADS
+	LDFLAGS += -lpthread
 endif
 
 REPDEP = sed -i -e '1s,\($*\)\.o[ :]*,\1.o \.$*.d: ,' \.$*.d
