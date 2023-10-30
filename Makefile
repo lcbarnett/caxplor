@@ -4,20 +4,6 @@ WITH_PTHREADS = 1
 
 SRC = main.c word.c ca.c rtab.c analyse.c sim_ana.c sim_bmark.c sim_test.c utils.c clap.c mt64.c strman.c
 
-ifdef WITH_GD
-	SRC += cagd.c
-endif
-
-ifdef WITH_X11
-	SRC += caX11.c sim_xplor.c screen_metrics.c
-endif
-
-ifdef WITH_PTHREADS
-	SRC += sim_dd_mt.c
-else
-	SRC += sim_dd_st.c
-endif
-
 OBJ = $(patsubst %.c,.%.o,$(SRC))
 DEP = $(patsubst %.o,%.d,$(OBJ))
 BIN = caxplor
@@ -27,22 +13,28 @@ BIN = caxplor
 OFLAGS  = -march=native -O3 -flto
 WFLAGS  = -Wall -Werror -Wextra -Wconversion -Winline -Wno-unused-parameter
 DFLAGS  = -D_DEFAULT_SOURCE -DUNSAFE_ZPIXMAP -D_GNU_SOURCE
+
 CFLAGS  = $(OFLAGS) $(WFLAGS) $(DFLAGS)
 LDFLAGS = $(OFLAGS) -lm
 
-ifdef WITH_GD
+ifeq ($(WITH_GD),1)
+	SRC     += cagd.c
 	DFLAGS  += -DHAVE_GD
 	LDFLAGS += -lgd
 endif
 
-ifdef WITH_X11
+ifeq ($(WITH_X11),1)
+	SRC     += caX11.c sim_xplor.c screen_metrics.c
 	DFLAGS  += -DHAVE_X11
 	LDFLAGS += -lX11
 endif
 
-ifdef WITH_PTHREADS
+ifeq ($(WITH_PTHREADS),1)
+	SRC     += sim_dd_mt.c
 	DFLAGS  += -DHAVE_PTHREADS
 	LDFLAGS += -lpthread
+else
+	SRC += sim_dd_st.c
 endif
 
 REPDEP = sed -i -e '1s,\($*\)\.o[ :]*,\1.o \.$*.d: ,' \.$*.d
@@ -55,10 +47,11 @@ clean:
 	rm -f $(OBJ) $(DEP) $(BIN)
 
 diag:
-	@echo "*** SRC = " $(SRC)
-	@echo "*** OBJ = " $(OBJ)
-	@echo "*** DEP = " $(DEP)
-	@echo "*** BIN = " $(BIN)
+	@echo "*** SRC     = " $(SRC)
+	@echo "*** OBJ     = " $(OBJ)
+	@echo "*** DEP     = " $(DEP)
+	@echo "*** BIN     = " $(BIN)
+	@echo "*** WITH_GD = " $(WITH_GD)
 
 $(OBJ): .%.o: %.c
 	$(CC) -std=c99 -c -MMD -MP $(CFLAGS) $< -o $@
