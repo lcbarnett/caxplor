@@ -3,8 +3,7 @@
 #include "clap.h"
 #include "rtab.h"
 
-#define odbuflen (200)
-static char odir[odbuflen];
+#define ofnlen 1000
 
 typedef struct {
 	size_t tnum;
@@ -15,10 +14,12 @@ typedef struct {
 	int    tmmax;
 	int    tiff;
 	int    tlag;
+	char   ofname[ofnlen+1];
 } targ_t;
 
 void* compfun(void* arg)
 {
+	const pthread_t tpid = pthread_self();
 	const targ_t* const targ = (targ_t*)arg;
 
 	const size_t tnum  = targ->tnum+1;
@@ -31,14 +32,16 @@ void* compfun(void* arg)
 	const int tmmax  = targ->tmmax;
 	const int tiff   = targ->tiff;
 	const int tlag   = targ->tlag;
-	const int hlen   = (emmax > tmmax ? emmax : tmmax)+1;
-	const int rfsize = rsize > fsize ? rsize : fsize;
+	const char* const ofname = targ->ofname;
 
-	printf("thread %2zu : rule id = ",tnum);
+	printf("thread %2zu (%zu): rule id = ",tnum,tpid);
 	rt_print_id(rsize,rtab);
 	printf(", filter id = ");
 	rt_print_id(fsize,ftab);
 	putchar('\n'); fflush(stdout);
+
+	const int hlen   = (emmax > tmmax ? emmax : tmmax)+1;
+	const int rfsize = rsize > fsize ? rsize : fsize;
 
 	double Hr[hlen];
 	double Hf[hlen];
@@ -57,14 +60,6 @@ void* compfun(void* arg)
 		DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag)/(double)m;
 	}
 
-	const size_t ofnlen = 1000;
-	char ofname[ofnlen+1];
-	snprintf(ofname,ofnlen,"%s/cadd_",odir);
-	rt_sprint_id(rsize,rtab,ofnlen,ofname);
-	strncat(ofname,"_",1);
-	rt_sprint_id(fsize,ftab,ofnlen,ofname);
-	strncat(ofname,".dat",4);
-
 	FILE* const dfs = fopen(ofname,"w");
 	if (dfs == NULL) PEEXIT("thread %2zu : failed to open output file \"%s\"\n",tnum,ofname);
 	for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,Hr[m],Hf[m],DD[m]);
@@ -82,16 +77,14 @@ int sim_dd_mt(int argc, char* argv[])
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_CARG(irtfile, cstr,   "saved.rt",    "input rtids file");
+	CLAP_CARG(irtfile, cstr,   "saved2.rt",   "input rtids file");
 	CLAP_CARG(emmax,   int,     20,           "maximum sequence length for entropy calculation");
 	CLAP_CARG(eiff,    int,     1,            "advance before entropy");
 	CLAP_CARG(tmmax,   int,     14,           "maximum sequence length for DD calculation");
 	CLAP_CARG(tiff,    int,     0,            "advance before DD calculation");
 	CLAP_CARG(tlag,    int,     1,            "lag for DD calculation");
-	CLAP_CARG(outdir,  cstr,   "/tmp",        "output file directory");
+	CLAP_CARG(odir,    cstr,   "/tmp",        "output file directory");
 	puts("---------------------------------------------------------------------------------------\n");
-
-	strncpy(odir,outdir,odbuflen);
 
 	// Read in rule/filter rtids
 
@@ -121,7 +114,7 @@ int sim_dd_mt(int argc, char* argv[])
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
 
-	// set up parameter struct array
+	// thread-independent parameters
 
 	targ_t targ[ntfilts];
 	for (size_t tnum=0; tnum<ntfilts; ++tnum) {
@@ -133,29 +126,38 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].tlag  = tlag;
 	}
 
-	// kick off computation threads
+	// loop through rules/filters
+
 	size_t tnum = 0;
 	for (; rule != NULL; rule = rule->next) {
 		for (; rule->filt != NULL; rule->filt = rule->filt->next,++tnum) {
-			targ[tnum].rule  = rule;
-			targ[tnum].filt  = rule->filt;
+
+			// thread-dependent parameters
+
+			targ[tnum].rule = rule;
+			targ[tnum].filt = rule->filt;
+			snprintf(targ[tnum].ofname,ofnlen,"%s/cadd_",odir);
+			rt_sprint_id(rule->size,rule->tab,ofnlen,targ[tnum].ofname);
+			strncat(targ[tnum].ofname,"_",1);
+			rt_sprint_id(rule->filt->size,rule->filt->tab,ofnlen,targ[tnum].ofname);
+			strncat(targ[tnum].ofname,".dat",4);
+
+			// kick off computation thread
+
 			const int tres = pthread_create(&threads[tnum],&attr,compfun,(void*)&targ[tnum]);
-			if (tres) {
-				fprintf(stderr,"Error: unable to create thread %zu",tnum);
-				exit(EXIT_FAILURE);
-			}
+			if (tres) PEEXIT("unable to create thread %zu",tnum+1)
 		}
 	}
 
-	// free attribute and wait for the other threads
+	// free attribute and wait for the other threads to complete
+
 	pthread_attr_destroy(&attr);
 	for (size_t tnum=0; tnum<ntfilts; ++tnum) {
 		const int tres = pthread_join(threads[tnum],NULL);
-		if (tres) {
-			fprintf(stderr,"Error: unable to join thread %zu",tnum);
-			exit(EXIT_FAILURE);
-		}
+		if (tres) PEEXIT("unable to join thread %zu",tnum+1)
 	}
+
+	// clean up
 
 	pthread_exit(NULL);
 
