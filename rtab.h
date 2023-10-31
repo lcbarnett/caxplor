@@ -1,8 +1,6 @@
 #ifndef RTAB_H
 #define RTAB_H
 
-#include <X11/Xlib.h>
-
 #include "word.h"
 
 /*********************************************************************/
