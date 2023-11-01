@@ -29,7 +29,7 @@ void* compfun(void* arg)
 	const int tnum  = targ->tnum;
 	const int nfint = targ->nfint;
 
-	printf("thread %2d (%zu) : %d filters : STARTED\n",tnum,tpid,nfint);
+	printf("thread %2d (%zu) : %d filters : STARTED\n",tnum+1,tpid,nfint);
 
 	const int emmax = targ->emmax;
 	const int eiff  = targ->eiff;
@@ -72,8 +72,8 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,Hr[m],Hf[m],DD[m]);
 		if (fclose(dfs) == -1) PEEXIT("thread %2d : failed to close output file\n",tnum);
 
-		flockfile(stdout); // prevent another thread interfering!
-		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum,i,nfint);
+		flockfile(stdout); // prevent another thread butting in!
+		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum+1,i+1,nfint);
 		rt_print_id(rsize,rtab);
 		printf(", filter id = ");
 		rt_print_id(fsize,ftab);
@@ -81,7 +81,7 @@ void* compfun(void* arg)
 		funlockfile(stdout);
 	}
 
-	printf("thread %2d (%zu) : %d filters : FINISHED\n",tnum,tpid,nfint);
+	printf("thread %2d (%zu) : %d filters : FINISHED\n",tnum+1,tpid,nfint);
 
 	pthread_exit(NULL);
 }
@@ -164,7 +164,7 @@ int sim_dd_mt(int argc, char* argv[])
 				if (nfint == nfpert) {
 					targ[tnum].tnum  = tnum;
 					targ[tnum].nfint = nfint;
-					if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum,nthreads,nfint,nfpert);
+					if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
 					++tnum;
 					nfint = 0;
 				}
@@ -174,7 +174,7 @@ int sim_dd_mt(int argc, char* argv[])
 	if (nfint > 0) {
 		targ[tnum].tnum  = tnum;
 		targ[tnum].nfint = nfint;
-		if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum,nthreads,nfint,nfpert);
+		if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
 	}
 
 	// initialize and set thread joinable
