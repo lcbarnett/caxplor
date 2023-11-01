@@ -52,12 +52,6 @@ void* compfun(void* arg)
 		const word_t* const ftab   = tfilt[i].filt->tab;
 		const char*   const ofname = tfilt[i].ofname;
 
-		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum,i,nfint);
-		rt_print_id(rsize,rtab);
-		printf(", filter id = ");
-		rt_print_id(fsize,ftab);
-		putchar('\n'); fflush(stdout);
-
 		const int rfsize = rsize > fsize ? rsize : fsize;
 
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
@@ -78,11 +72,16 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,Hr[m],Hf[m],DD[m]);
 		if (fclose(dfs) == -1) PEEXIT("thread %2d : failed to close output file\n",tnum);
 
-		printf("\tthread %2d : filter %2d of %2d : rule entropy ≈ %8.6f, filter entropy ≈ %8.6f, DD ≈ %8.6f : written \"%s\"\n",tnum,i,nfint,Hr[emmax],Hf[emmax],DD[tmmax],ofname);
+		flockfile(stdout); // prevent another thread interfering!
+		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum,i,nfint);
+		rt_print_id(rsize,rtab);
+		printf(", filter id = ");
+		rt_print_id(fsize,ftab);
+		printf(" : rule entropy ≈ %8.6f, filter entropy ≈ %8.6f, DD ≈ %8.6f : written \"%s\"\n",Hr[emmax],Hf[emmax],DD[tmmax],ofname);
+		funlockfile(stdout);
 	}
 
 	printf("thread %2d (%zu) : %d filters : FINISHED\n",tnum,tpid,nfint);
-
 
 	pthread_exit(NULL);
 }
@@ -102,6 +101,7 @@ int sim_dd_mt(int argc, char* argv[])
 	CLAP_CARG(tlag,     int,     1,            "lag for DD calculation");
 	CLAP_CARG(nthreads, int,     4,            "number of threads");
 	CLAP_CARG(odir,     cstr,   "/tmp",        "output file directory");
+	CLAP_CARG(verb,     int,     0,            "verbose output");
 	puts("---------------------------------------------------------------------------------------\n");
 
 	// Read in rule/filter rtids
@@ -124,16 +124,8 @@ int sim_dd_mt(int argc, char* argv[])
 	for (size_t k=0;k<nrules;++k) printf(" %zu",nfilts[k]);
 	printf(" (total = %d)\n\n",ntfilts);
 
-	const int nfpert = ntfilts/nthreads+1;
-	printf("threads = %d\nfilters = %d\nfilters per thread = %d (%d)\n\n",nthreads,ntfilts,nfpert,ntfilts%nthreads);
-
-	// initialize and set thread joinable
-
-	pthread_t threads[nthreads];
-	pthread_attr_t attr;
-
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
+	const int nfpert = ntfilts/nthreads + (ntfilts%nthreads ? 1 : 0);
+	printf("threads = %d\nfilters = %d\nfilters per thread = %d (%d)\n\n",nthreads,ntfilts,nfpert,ntfilts-nfpert*(nthreads-1));
 
 	// thread-independent parameters
 
@@ -147,36 +139,59 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].tfilt = malloc((size_t)nfpert*sizeof(tfilt_t));
 	}
 
-	// loop through rules/filters
+	// loop through rules/filters, setting up thread-dependent parameters
 
+	int tnum  = 0;
 	int nfint = 0;
-	int tnum = 0;
-	for (; rule != NULL; rule = rule->next) {
-		for (; rule->filt != NULL; rule->filt = rule->filt->next) {
-			targ[tnum].tfilt[nfint].rule = rule;
-			targ[tnum].tfilt[nfint].filt = rule->filt;
-			snprintf(targ[tnum].tfilt[nfint].ofname,ofnlen,"%s/cadd_",odir);
-			rt_sprint_id(rule->size,rule->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
-			strncat(targ[tnum].tfilt[nfint].ofname,"_",1);
-			rt_sprint_id(rule->filt->size,rule->filt->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
-			strncat(targ[tnum].tfilt[nfint].ofname,".dat",4);
-			if (++nfint == nfpert) {
-				targ[tnum].tnum  = tnum;
-				targ[tnum].nfint = nfint;
-				const int tres = pthread_create(&threads[tnum],&attr,compfun,(void*)&targ[tnum]);
-				if (tres) PEEXIT("unable to create thread %d",tnum+1)
-				nfint = 0;
-				++tnum;
+	for (rtl_t* r = rtl_init(rule); r != NULL; r = r->next) {
+		if (r->filt != NULL) {
+			for (rtl_t* f = r->filt; f != NULL; f = f->next) {
+				targ[tnum].tfilt[nfint].rule = r;
+				targ[tnum].tfilt[nfint].filt = f;
+				snprintf(targ[tnum].tfilt[nfint].ofname,ofnlen,"%s/cadd_",odir);
+				rt_sprint_id(r->size,r->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
+				strncat(targ[tnum].tfilt[nfint].ofname,"_",1);
+				rt_sprint_id(f->size,f->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
+				strncat(targ[tnum].tfilt[nfint].ofname,".dat",4);
+				if (verb) {
+					printf("\tnfint = %d, ",nfint);
+					rt_print_id(r->size,r->tab);
+					putchar(' ');
+					rt_print_id(f->size,f->tab);
+					putchar('\n');
+				}
+				++nfint;
+				if (nfint == nfpert) {
+					targ[tnum].tnum  = tnum;
+					targ[tnum].nfint = nfint;
+					if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum,nthreads,nfint,nfpert);
+					++tnum;
+					nfint = 0;
+				}
 			}
 		}
 	}
 	if (nfint > 0) {
 		targ[tnum].tnum  = tnum;
 		targ[tnum].nfint = nfint;
+		if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum,nthreads,nfint,nfpert);
+	}
+
+	// initialize and set thread joinable
+
+	pthread_t threads[nthreads];
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
+
+	// kick off threads
+
+	for (tnum=0; tnum<nthreads; ++tnum) {
 		const int tres = pthread_create(&threads[tnum],&attr,compfun,(void*)&targ[tnum]);
 		if (tres) PEEXIT("unable to create thread %d",tnum+1)
 	}
-//return 0;
+
 	// free attribute and wait for the other threads to complete
 
 	pthread_attr_destroy(&attr);

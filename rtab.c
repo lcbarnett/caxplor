@@ -26,31 +26,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 	curr->tab = rt_alloc(size);
 	return curr;
 }
-/*
-rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
-{
-	if (curr == NULL) { // empty list
-		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
-		curr->next = NULL;
-		curr->prev = NULL;
-	}
-	else {
-		rtl_t* const newprev = curr;
-		rtl_t* const newnext = curr->next;
-		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
-		curr->next = newnext;
-		curr->prev = newprev;
-		newprev->next = curr;
-		if (newnext != NULL) newnext->prev = curr; // not at end of list
-	}
-	curr->filt = NULL;
-	curr->size = size;
-	curr->tab = rt_alloc(size);
-	return curr;
-}
-*/
+
 rtl_t* rtl_del(rtl_t* curr)
 {
 	if (curr == NULL) return NULL; // nothing to delete
@@ -98,8 +74,22 @@ rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
 	return NULL;
 }
 
+rtl_t* rtl_init(rtl_t* rule)
+{
+	if (rule == NULL) return NULL;
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of rule list
+	for (; rule->next != NULL; rule = rule->next) {
+		if (rule->filt != NULL) { // have a filter list
+			while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // go to beginning of filter list
+		}
+	}
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of rule list again
+	return rule;
+}
+
 size_t* rtl_nitems(const rtl_t* const rule, size_t* const nrules)
 {
+	// should call rtl_init(rule) first !!!
 	*nrules = 0;
 	if (rule == NULL) return NULL;
 	for (const rtl_t* r = rule; r != NULL; r = r->next) ++(*nrules);
