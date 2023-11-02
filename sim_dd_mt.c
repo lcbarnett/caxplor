@@ -97,12 +97,17 @@ void set_ofname(char* const ofname, const rtl_t* const r, const rtl_t* const f, 
 
 int sim_dd_mt(int argc, char* argv[])
 {
+	// timers
+
+	const double wts = get_wall_time();
+	const double cts = get_cpu_time();
+
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
 	//
 	// Arg:   name     type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_CARG(irtfile,  cstr,   "saved2.rt",   "input rtids file");
+	CLAP_CARG(irtfile,  cstr,   "saved.rt",    "input rtids file");
 	CLAP_CARG(emmax,    int,     20,           "maximum sequence length for entropy calculation");
 	CLAP_CARG(eiff,     int,     1,            "advance before entropy");
 	CLAP_CARG(tmmax,    int,     14,           "maximum sequence length for DD calculation");
@@ -208,10 +213,14 @@ int sim_dd_mt(int argc, char* argv[])
 
 	for (int tnum=0; tnum<nthreads; ++tnum) free(targ[tnum].tfilt);
 
-	pthread_exit(NULL);
-
 	free(nfilts);
 	rtl_free(rule);
 
-	return EXIT_SUCCESS;
+	const double cte = get_cpu_time()  - cts;
+	const double wte = get_wall_time() - wts;
+
+	printf("\nCPU  time (secs) = %.4f\n",cte);
+	printf("Wall time (secs) = %.4f\n",wte);
+
+	pthread_exit(NULL);
 }

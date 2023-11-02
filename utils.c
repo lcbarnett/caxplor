@@ -6,6 +6,24 @@
 #define GPCMD "gnuplot -p"
 #define SMAXLEN 200
 
+
+double get_wall_time()
+{
+    struct timeval time;
+    if (gettimeofday(&time,NULL)) PEEXIT("'gettimeofday' failed");
+    return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
+double get_cpu_time()
+{
+    return (double)clock() / CLOCKS_PER_SEC;
+}
+
+double timer()
+{
+	return (double)clock()/(double)CLOCKS_PER_SEC;
+}
+
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin)
 {
 	const double a = min(n,x);
