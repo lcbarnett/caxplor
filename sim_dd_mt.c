@@ -86,6 +86,15 @@ void* compfun(void* arg)
 	pthread_exit(NULL);
 }
 
+void set_ofname(char* const ofname, const rtl_t* const r, const rtl_t* const f, const char* const odir)
+{
+	snprintf(ofname,ofnlen,"%s/cadd_",odir);
+	rt_sprint_id(r->size,r->tab,ofnlen,ofname);
+	strncat(ofname,"_",1);
+	rt_sprint_id(f->size,f->tab,ofnlen,ofname);
+	strncat(ofname,".dat",4);
+}
+
 int sim_dd_mt(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
@@ -144,30 +153,25 @@ int sim_dd_mt(int argc, char* argv[])
 	int tnum  = 0;
 	int nfint = 0;
 	for (rtl_t* r = rtl_init(rule); r != NULL; r = r->next) {
-		if (r->filt != NULL) {
-			for (rtl_t* f = r->filt; f != NULL; f = f->next) {
-				targ[tnum].tfilt[nfint].rule = r;
-				targ[tnum].tfilt[nfint].filt = f;
-				snprintf(targ[tnum].tfilt[nfint].ofname,ofnlen,"%s/cadd_",odir);
-				rt_sprint_id(r->size,r->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
-				strncat(targ[tnum].tfilt[nfint].ofname,"_",1);
-				rt_sprint_id(f->size,f->tab,ofnlen,targ[tnum].tfilt[nfint].ofname);
-				strncat(targ[tnum].tfilt[nfint].ofname,".dat",4);
-				if (verb) {
-					printf("\tnfint = %d, ",nfint);
-					rt_print_id(r->size,r->tab);
-					putchar(' ');
-					rt_print_id(f->size,f->tab);
-					putchar('\n');
-				}
-				++nfint;
-				if (nfint == nfpert) {
-					targ[tnum].tnum  = tnum;
-					targ[tnum].nfint = nfint;
-					if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
-					++tnum;
-					nfint = 0;
-				}
+		for (rtl_t* f = r->filt; f != NULL; f = f->next) {
+			tfilt_t* const tfilt =  &targ[tnum].tfilt[nfint];
+			tfilt->rule = r;
+			tfilt->filt = f;
+			set_ofname(tfilt->ofname,r,f,odir);
+			if (verb) {
+				printf("\tnfint = %d, ",nfint);
+				rt_print_id(r->size,r->tab);
+				putchar(' ');
+				rt_print_id(f->size,f->tab);
+				putchar('\n');
+			}
+			++nfint;
+			if (nfint == nfpert) {
+				targ[tnum].tnum  = tnum;
+				targ[tnum].nfint = nfint;
+				if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
+				++tnum;
+				nfint = 0;
 			}
 		}
 	}
