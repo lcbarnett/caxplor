@@ -30,6 +30,7 @@ void* compfun(void* arg)
 	const int nfint = targ->nfint;
 
 	printf("thread %2d (%zu) : %d filters : STARTED\n",tnum+1,tpid,nfint);
+	fflush(stdout);
 
 	const int emmax = targ->emmax;
 	const int eiff  = targ->eiff;
@@ -78,10 +79,12 @@ void* compfun(void* arg)
 		printf(", filter id = ");
 		rt_print_id(fsize,ftab);
 		printf(" : rule entropy ≈ %8.6f, filter entropy ≈ %8.6f, DD ≈ %8.6f : written \"%s\"\n",Hr[emmax],Hf[emmax],DD[tmmax],ofname);
+		fflush(stdout);
 		funlockfile(stdout);
 	}
 
 	printf("thread %2d (%zu) : %d filters : FINISHED\n",tnum+1,tpid,nfint);
+	fflush(stdout);
 
 	pthread_exit(NULL);
 }
@@ -97,11 +100,6 @@ void set_ofname(char* const ofname, const rtl_t* const r, const rtl_t* const f, 
 
 int sim_dd_mt(int argc, char* argv[])
 {
-	// timers
-
-	const double wts = get_wall_time();
-	const double cts = get_cpu_time();
-
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
 	//
@@ -138,6 +136,7 @@ int sim_dd_mt(int argc, char* argv[])
 	putchar('\n');
 	const int nfpert = nfilts/nthreads + (nfilts%nthreads ? 1 : 0);
 	printf("threads = %d\nfilters per thread = %d (%d)\n\n",nthreads,nfpert,nfilts-nfpert*(nthreads-1));
+	fflush(stdout);
 	free(nfperr);
 
 	// thread-independent parameters
@@ -214,11 +213,5 @@ int sim_dd_mt(int argc, char* argv[])
 
 	rtl_free(rule);
 
-	const double cte = get_cpu_time()  - cts;
-	const double wte = get_wall_time() - wts;
-
-	printf("\nCPU  time (secs) = %.4f\n",cte);
-	printf("Wall time (secs) = %.4f\n",wte);
-
-	pthread_exit(NULL);
+	return EXIT_SUCCESS;
 }

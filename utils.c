@@ -6,7 +6,6 @@
 #define GPCMD "gnuplot -p"
 #define SMAXLEN 200
 
-
 double get_wall_time()
 {
     struct timeval time;
