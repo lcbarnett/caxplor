@@ -128,18 +128,17 @@ int sim_dd_mt(int argc, char* argv[])
 	ASSERT(rule != NULL,"No valid rtids found in input file!");
 	if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
 
-	// Calculate number of rules/filters (number of threads = total number of filters)
+	// Calculate number of rules/filters
 
-	size_t nrules;
-	size_t* const nfilts = rtl_nitems(rule,&nrules);
-	int ntfilts = 0;
-	for (size_t k=0;k<nrules;++k) ntfilts += (int)nfilts[k];
-	printf("number of rules = %zu, filters =",nrules);
-	for (size_t k=0;k<nrules;++k) printf(" %zu",nfilts[k]);
-	printf(" (total = %d)\n\n",ntfilts);
-
-	const int nfpert = ntfilts/nthreads + (ntfilts%nthreads ? 1 : 0);
-	printf("threads = %d\nfilters = %d\nfilters per thread = %d (%d)\n\n",nthreads,ntfilts,nfpert,ntfilts-nfpert*(nthreads-1));
+	int nrules, nfilts;
+	int* const nfperr = rtl_nitems(rule,&nrules,&nfilts);
+	printf("\nrules   = %d\n",nrules);
+	printf("filters = %d :",nfilts);
+	for (int k=0;k<nrules;++k) printf(" %d",nfperr[k]);
+	putchar('\n');
+	const int nfpert = nfilts/nthreads + (nfilts%nthreads ? 1 : 0);
+	printf("threads = %d\nfilters per thread = %d (%d)\n\n",nthreads,nfpert,nfilts-nfpert*(nthreads-1));
+	free(nfperr);
 
 	// thread-independent parameters
 
@@ -213,7 +212,6 @@ int sim_dd_mt(int argc, char* argv[])
 
 	for (int tnum=0; tnum<nthreads; ++tnum) free(targ[tnum].tfilt);
 
-	free(nfilts);
 	rtl_free(rule);
 
 	const double cte = get_cpu_time()  - cts;

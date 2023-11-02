@@ -87,18 +87,19 @@ rtl_t* rtl_init(rtl_t* rule)
 	return rule;
 }
 
-size_t* rtl_nitems(const rtl_t* const rule, size_t* const nrules)
+int* rtl_nitems(const rtl_t* const rule, int* const nrules, int* const nfilts)
 {
 	// should call rtl_init(rule) first !!!
 	*nrules = 0;
 	if (rule == NULL) return NULL;
 	for (const rtl_t* r = rule; r != NULL; r = r->next) ++(*nrules);
-	size_t* const nfilts = calloc(*nrules,sizeof(size_t)); // zero-initialises
-	size_t* nf = nfilts;
-	for (const rtl_t* r = rule; r != NULL; r = r->next,++nf) {
-		for (const rtl_t* f = r->filt; f != NULL; f = f->next)  ++(*nf);
+	int* const nfperr = calloc((size_t)*nrules,sizeof(int)); // zero-initialises
+	int* nfpr = nfperr;
+	*nfilts = 0;
+	for (const rtl_t* r = rule; r != NULL; r = r->next,++nfpr) {
+		for (const rtl_t* f = r->filt; f != NULL; f = f->next)  {++(*nfpr); ++(*nfilts);}
 	}
-	return nfilts;
+	return nfperr;
 }
 
 rtl_t* rtl_fread(FILE* rtfs)

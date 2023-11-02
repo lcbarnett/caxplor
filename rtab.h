@@ -20,7 +20,7 @@ rtl_t*  rtl_del    (rtl_t* curr);
 void    rtl_free   (rtl_t* curr);
 rtl_t*  rtl_find   (const rtl_t* rule, const int size, const word_t* const tab);
 rtl_t*  rtl_init   (rtl_t* rule);
-size_t* rtl_nitems (const rtl_t* const rule, size_t* const nrules);
+int*    rtl_nitems (const rtl_t* const rule, int* const nrules, int* const nfilts);
 rtl_t*  rtl_fread  (FILE* rtfs);
 
 /*********************************************************************/
