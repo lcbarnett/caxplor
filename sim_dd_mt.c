@@ -3,13 +3,13 @@
 #include "clap.h"
 #include "rtab.h"
 
-#define ofnlen 1000
+#define ofnmaxlen 1000
 
 typedef struct {
 	rtl_t* rule;
 	rtl_t* filt;
-	char   ofname[ofnlen+1];
-} tfilt_t;
+	char*  ofname;
+} tfarg_t;
 
 typedef struct {
 	int tnum;
@@ -19,7 +19,7 @@ typedef struct {
 	int tmmax;
 	int tiff;
 	int tlag;
-	tfilt_t* tfilt;
+	tfarg_t* tfarg;
 } targ_t;
 
 void* compfun(void* arg)
@@ -39,7 +39,7 @@ void* compfun(void* arg)
 	const int tlag  = targ->tlag;
 	const int hlen  = (emmax > tmmax ? emmax : tmmax)+1;
 
-	const tfilt_t* const tfilt = targ->tfilt;
+	const tfarg_t* const tfarg = targ->tfarg;
 
 	double Hr[hlen];
 	double Hf[hlen];
@@ -47,11 +47,11 @@ void* compfun(void* arg)
 
 	for (int i=0; i<nfint; ++i) {
 
-		const int           rsize  = tfilt[i].rule->size;
-		const int           fsize  = tfilt[i].filt->size;
-		const word_t* const rtab   = tfilt[i].rule->tab;
-		const word_t* const ftab   = tfilt[i].filt->tab;
-		const char*   const ofname = tfilt[i].ofname;
+		const int           rsize  = tfarg[i].rule->size;
+		const int           fsize  = tfarg[i].filt->size;
+		const word_t* const rtab   = tfarg[i].rule->tab;
+		const word_t* const ftab   = tfarg[i].filt->tab;
+		const char*   const ofname = tfarg[i].ofname;
 
 		const int rfsize = rsize > fsize ? rsize : fsize;
 
@@ -89,13 +89,14 @@ void* compfun(void* arg)
 	pthread_exit(NULL);
 }
 
-void set_ofname(char* const ofname, const rtl_t* const r, const rtl_t* const f, const char* const odir)
+size_t set_ofname(char* const ofname, const rtl_t* const r, const rtl_t* const f, const char* const odir)
 {
-	snprintf(ofname,ofnlen,"%s/cadd_",odir);
-	rt_sprint_id(r->size,r->tab,ofnlen,ofname);
+	snprintf(ofname,ofnmaxlen,"%s/cadd_",odir);
+	rt_sprint_id(r->size,r->tab,ofnmaxlen,ofname);
 	strncat(ofname,"_",1);
-	rt_sprint_id(f->size,f->tab,ofnlen,ofname);
+	rt_sprint_id(f->size,f->tab,ofnmaxlen,ofname);
 	strncat(ofname,".dat",4);
+	return strlen(ofname);
 }
 
 int sim_dd_mt(int argc, char* argv[])
@@ -148,19 +149,23 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].tmmax = tmmax;
 		targ[tnum].tiff  = tiff;
 		targ[tnum].tlag  = tlag;
-		targ[tnum].tfilt = malloc((size_t)nfpert*sizeof(tfilt_t));
+		targ[tnum].tfarg = malloc((size_t)nfpert*sizeof(tfarg_t));
 	}
 
 	// loop through rules/filters, setting up thread-dependent parameters
+
+	char ofname[ofnmaxlen+1];
 
 	int tnum  = 0;
 	int nfint = 0;
 	for (rtl_t* r = rtl_init(rule); r != NULL; r = r->next) {
 		for (rtl_t* f = r->filt; f != NULL; f = f->next) {
-			tfilt_t* const tfilt =  &targ[tnum].tfilt[nfint];
-			tfilt->rule = r;
-			tfilt->filt = f;
-			set_ofname(tfilt->ofname,r,f,odir);
+			tfarg_t* const tfarg =  &targ[tnum].tfarg[nfint];
+			tfarg->rule = r;
+			tfarg->filt = f;
+			const size_t ofnlen = set_ofname(ofname,r,f,odir);
+			tfarg->ofname = malloc(ofnlen+1);
+			strncpy(tfarg->ofname,ofname,ofnlen);
 			if (verb) {
 				printf("\tnfint = %d, ",nfint);
 				rt_print_id(r->size,r->tab);
@@ -209,7 +214,10 @@ int sim_dd_mt(int argc, char* argv[])
 
 	// clean up
 
-	for (int tnum=0; tnum<nthreads; ++tnum) free(targ[tnum].tfilt);
+	for (int tnum=0; tnum<nthreads; ++tnum) {
+		for (int i=0; i<targ[tnum].nfint; ++i) free(targ[tnum].tfarg[i].ofname);
+		free(targ[tnum].tfarg);
+	}
 
 	rtl_free(rule);
 

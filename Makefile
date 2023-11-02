@@ -33,8 +33,6 @@ ifeq ($(WITH_PTHREADS),1)
 	SRC     += sim_dd_mt.c
 	DFLAGS  += -DHAVE_PTHREADS
 	LDFLAGS += -lpthread
-else
-	SRC += sim_dd_st.c
 endif
 
 REPDEP = sed -i -e '1s,\($*\)\.o[ :]*,\1.o \.$*.d: ,' \.$*.d

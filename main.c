@@ -12,14 +12,12 @@ int sim_xplor (int argc, char* argv[]);
 #endif
 #ifdef HAVE_PTHREADS
 int sim_dd_mt (int argc, char* argv[]);
-#else
-int sim_dd_st (int argc, char* argv[]);
 #endif
 
 int main(int argc, char* argv[])
 {
 	const double wts = get_wall_time();
-	const double cts = get_cpu_time();
+	const double cts = get_cpu_time ();
 
 	int res;
 	if (argc > 1) {
@@ -31,8 +29,6 @@ int main(int argc, char* argv[])
 #endif
 #ifdef HAVE_PTHREADS
 		else if (strcmp(argv[1],"dd"   )  == 0) res = sim_dd_mt (argc-2,argv+2);
-#else
-		else if (strcmp(argv[1],"dd"   )  == 0) res = sim_dd_st (argc-2,argv+2);
 #endif
 		else {
 			fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
@@ -44,7 +40,7 @@ int main(int argc, char* argv[])
 		res = EXIT_FAILURE;
 	}
 
-	const double cte = get_cpu_time()  - cts;
+	const double cte = get_cpu_time () - cts;
 	const double wte = get_wall_time() - wts;
 
 	printf("\nCPU  time (secs) = %.4f\n",cte);
