@@ -32,12 +32,35 @@ int main(int argc, char* argv[])
 #endif
 		else {
 			fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
-			res = EXIT_FAILURE;
+			return EXIT_FAILURE;
 		}
 	}
 	else {
-		fprintf(stderr,"%s: must specify simulation\n",argv[0]);
-		res = EXIT_FAILURE;
+		puts("\ncaxplor compile options:");
+#ifdef HAVE_PTHREADS
+		puts("\t+WITH_PTHREADS");
+#else
+		puts("\t-WITH_PTHREADS");
+#endif
+#ifdef HAVE_X11
+		puts("\t+WITH_X11");
+#else
+		puts("\t-WITH_X11");
+#endif
+#ifdef HAVE_GD
+		puts("\t+WITH_GD");
+#else
+		puts("\t-WITH_GD");
+#endif
+		puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
+#ifdef HAVE_X11
+		puts("\txplor");
+#endif
+#ifdef HAVE_PTHREADS
+		puts("\tdd");
+#endif
+		putchar('\n');
+		return EXIT_SUCCESS;
 	}
 
 	const double cte = get_cpu_time () - cts;

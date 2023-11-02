@@ -1,7 +1,3 @@
-#ifndef HAVE_X11
-	#error "You shouldn't be trying to compile this if you have specified X11"
-#endif
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 

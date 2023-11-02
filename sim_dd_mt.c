@@ -69,7 +69,7 @@ void* compfun(void* arg)
 		}
 
 		FILE* const dfs = fopen(ofname,"w");
-		if (dfs == NULL) PEEXIT("thread %2d : failed to open output file \"%s\"\n",tnum,ofname);
+		PASSERT(dfs != NULL,"thread %2d : failed to open output file \"%s\"\n",tnum,ofname);
 		for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,Hr[m],Hf[m],DD[m]);
 		if (fclose(dfs) == -1) PEEXIT("thread %2d : failed to close output file\n",tnum);
 
@@ -83,7 +83,7 @@ void* compfun(void* arg)
 		funlockfile(stdout);
 	}
 
-	printf("thread %2d (%zu) : %d filters : FINISHED\n",tnum+1,tpid,nfint);
+	printf("thread %2d : FINISHED\n",tnum+1);
 	fflush(stdout);
 
 	pthread_exit(NULL);
@@ -114,7 +114,6 @@ int sim_dd_mt(int argc, char* argv[])
 	CLAP_CARG(tlag,     int,     1,            "lag for DD calculation");
 	CLAP_CARG(nthreads, int,     4,            "number of threads");
 	CLAP_CARG(odir,     cstr,   "/tmp",        "output file directory");
-	CLAP_CARG(verb,     int,     0,            "verbose output");
 	puts("---------------------------------------------------------------------------------------\n");
 
 	// Read in rule/filter rtids
@@ -122,10 +121,11 @@ int sim_dd_mt(int argc, char* argv[])
 	ASSERT(irtfile[0] != '\0',"Must supply an input rtid file");
 	printf("Reading rules and filters from '%s' ...\n",irtfile);
 	FILE* const irtfs = fopen(irtfile,"r");
-	if (irtfs == NULL) PEEXIT("failed to open input rtids file '%s'",irtfile);
+	PASSERT(irtfs != NULL,"failed to open input rtids file '%s'",irtfile);
 	rtl_t* rule = rtl_fread(irtfs);
 	ASSERT(rule != NULL,"No valid rtids found in input file!");
-	if (fclose(irtfs) == -1) PEEXIT("failed to close input rtids file '%s'",irtfile);
+	const int fres = fclose(irtfs);
+	PASSERT(fres == 0,"failed to close input rtids file '%s'",irtfile);
 
 	// Calculate number of rules/filters
 
@@ -135,8 +135,10 @@ int sim_dd_mt(int argc, char* argv[])
 	printf("filters = %d :",nfilts);
 	for (int k=0;k<nrules;++k) printf(" %d",nfperr[k]);
 	putchar('\n');
-	const int nfpert = nfilts/nthreads + (nfilts%nthreads ? 1 : 0);
-	printf("threads = %d\nfilters per thread = %d (%d)\n\n",nthreads,nfpert,nfilts-nfpert*(nthreads-1));
+	const int nfpert  = nfilts/nthreads + (nfilts%nthreads ? 1 : 0);
+	const int nfpertl = nfilts-nfpert*(nthreads-1);
+	printf("threads = %d\nfilters per thread = %d (last = %d)\n\n",nthreads,nfpert,nfpertl);
+	ASSERT(nfpertl > 0,"Too many threads for filters!?");
 	fflush(stdout);
 	free(nfperr);
 
@@ -165,19 +167,10 @@ int sim_dd_mt(int argc, char* argv[])
 			tfarg->filt = f;
 			const size_t ofnlen = set_ofname(ofname,r,f,odir);
 			tfarg->ofname = malloc(ofnlen+1);
-			strncpy(tfarg->ofname,ofname,ofnlen);
-			if (verb) {
-				printf("\tnfint = %d, ",nfint);
-				rt_print_id(r->size,r->tab);
-				putchar(' ');
-				rt_print_id(f->size,f->tab);
-				putchar('\n');
-			}
-			++nfint;
-			if (nfint == nfpert) {
+			strncpy(tfarg->ofname,ofname,ofnlen+1);
+			if (++nfint == nfpert) {
 				targ[tnum].tnum  = tnum;
 				targ[tnum].nfint = nfint;
-				if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
 				++tnum;
 				nfint = 0;
 			}
@@ -186,7 +179,6 @@ int sim_dd_mt(int argc, char* argv[])
 	if (nfint > 0) {
 		targ[tnum].tnum  = tnum;
 		targ[tnum].nfint = nfint;
-		if (verb) printf("thread %d of %d : nfint = %d (%d)\n\n",tnum+1,nthreads,nfint,nfpert);
 	}
 
 	// initialize and set thread joinable
@@ -201,7 +193,7 @@ int sim_dd_mt(int argc, char* argv[])
 
 	for (tnum=0; tnum<nthreads; ++tnum) {
 		const int tres = pthread_create(&threads[tnum],&attr,compfun,(void*)&targ[tnum]);
-		if (tres) PEEXIT("unable to create thread %d",tnum+1)
+		PASSERT(tres == 0,"unable to create thread %d",tnum+1)
 	}
 
 	// free attribute and wait for the other threads to complete
@@ -209,7 +201,7 @@ int sim_dd_mt(int argc, char* argv[])
 	pthread_attr_destroy(&attr);
 	for (int tnum=0; tnum<nthreads; ++tnum) {
 		const int tres = pthread_join(threads[tnum],NULL);
-		if (tres) PEEXIT("unable to join thread %d",tnum+1)
+		PASSERT(tres == 0,"unable to join thread %d",tnum+1)
 	}
 
 	// clean up
