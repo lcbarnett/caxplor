@@ -167,6 +167,7 @@ static inline void sqmagf(const size_t n, float* const a, const float* const x, 
 	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];
 }
 
+ulong  get_free_ram();
 double get_wall_time();
 double get_cpu_time();
 double timer();

@@ -104,7 +104,7 @@ int sim_dd_mt(int argc, char* argv[])
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
 	//
-	// Arg:   name     type     default       description
+	// Arg:   name      type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
 	CLAP_CARG(irtfile,  cstr,   "saved.rt",    "input rtids file");
 	CLAP_CARG(emmax,    int,     20,           "maximum sequence length for entropy calculation");
@@ -121,11 +121,11 @@ int sim_dd_mt(int argc, char* argv[])
 	ASSERT(irtfile[0] != '\0',"Must supply an input rtid file");
 	printf("Reading rules and filters from '%s' ...\n",irtfile);
 	FILE* const irtfs = fopen(irtfile,"r");
-	PASSERT(irtfs != NULL,"failed to open input rtids file '%s'",irtfile);
+	PASSERT(irtfs != NULL,"failed to open input rtids file");
 	rtl_t* rule = rtl_fread(irtfs);
 	ASSERT(rule != NULL,"No valid rtids found in input file!");
 	const int fres = fclose(irtfs);
-	PASSERT(fres == 0,"failed to close input rtids file '%s'",irtfile);
+	PASSERT(fres == 0,"failed to close input rtids file");
 
 	// Calculate number of rules/filters
 
@@ -138,8 +138,8 @@ int sim_dd_mt(int argc, char* argv[])
 	const int nfpert  = nfilts/nthreads + (nfilts%nthreads ? 1 : 0);
 	const int nfpertl = nfilts-nfpert*(nthreads-1);
 	printf("threads = %d\nfilters per thread = %d (last = %d)\n\n",nthreads,nfpert,nfpertl);
-	ASSERT(nfpertl > 0,"Too many threads for filters!?");
 	fflush(stdout);
+	ASSERT(nfpertl > 0,"Too many threads!?");
 	free(nfperr);
 
 	// thread-independent parameters
@@ -181,22 +181,21 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].nfint = nfint;
 	}
 
-	// initialize and set thread joinable
+	// set up computational threads as joinable
 
 	pthread_t threads[nthreads];
 	pthread_attr_t attr;
-
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
 
-	// kick off threads
+	// create threads
 
-	for (tnum=0; tnum<nthreads; ++tnum) {
+	for (int tnum=0; tnum<nthreads; ++tnum) {
 		const int tres = pthread_create(&threads[tnum],&attr,compfun,(void*)&targ[tnum]);
 		PASSERT(tres == 0,"unable to create thread %d",tnum+1)
 	}
 
-	// free attribute and wait for the other threads to complete
+	// free attribute and wait for computational threads to complete
 
 	pthread_attr_destroy(&attr);
 	for (int tnum=0; tnum<nthreads; ++tnum) {

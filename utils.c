@@ -1,10 +1,18 @@
 #include <string.h>
+#include <sys/sysinfo.h>
 
 #include "utils.h"
 
 #define GPDEFTITLE "CA Xplorer"
 #define GPCMD "gnuplot -p"
 #define SMAXLEN 200
+
+ulong get_free_ram()
+{
+	struct sysinfo info;
+	PASSERT(sysinfo(&info) == 0,"sysinfo call failed");
+	return info.freeram;
+}
 
 double get_wall_time()
 {
