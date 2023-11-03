@@ -9,7 +9,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 {
 	if (curr == NULL) { // empty list
 		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
+		TEST_ALLOC(curr);
 		curr->next = NULL;
 		curr->prev = NULL;
 	}
@@ -17,6 +17,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 		while (curr->next != NULL) curr = curr->next; // go to end of list
 		rtl_t* const oldcurr = curr;
 		curr = malloc(sizeof(rtl_t));
+		TEST_ALLOC(curr);
 		curr->prev = oldcurr;
 		curr->next = NULL;
 		oldcurr->next = curr;
@@ -95,6 +96,7 @@ int* rtl_nitems(const rtl_t* const rule, int* const nrules, int* const nfilts)
 	if (rule == NULL) return NULL;
 	for (const rtl_t* r = rule; r != NULL; r = r->next) ++(*nrules);
 	int* const nfperr = calloc((size_t)*nrules,sizeof(int)); // zero-initialises
+	TEST_ALLOC(nfperr);
 	int* nfpr = nfperr;
 	*nfilts = 0;
 	for (const rtl_t* r = rule; r != NULL; r = r->next,++nfpr) {
@@ -213,7 +215,7 @@ word_t* rt_alloc(const int size)
 {
 	ASSERT(size<WBITS,"rule too wide");
 	word_t* const tab = calloc(POW2(size),sizeof(word_t)); // note: zero initialises (this is fine)
-	PASSERT(tab != NULL,"memory allocation failed");
+	TEST_ALLOC(tab);
 	return tab;
 }
 
@@ -388,19 +390,14 @@ void rt_entro_hist(const int size, const word_t* const tab, const int m, const i
 double rt_entro(const int size, const word_t* const tab, const int m, const int iff)
 {
 	// Entropy for CA rule on sequence of length m after iter iterations
-	ulong freeram,reqram;
-	const   size_t S   = (size_t)POW2(m);
-	reqram = S*sizeof(ulong);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	ulong*  const  bin = calloc(S,sizeof(ulong)); // zero-initialises
-	PASSERT(bin != NULL,"memory allocation failed");
+	const size_t S = (size_t)POW2(m);
+	TEST_RAM(S*sizeof(ulong));
+	ulong*  const bin = calloc(S,sizeof(ulong)); // zero-initialises
+	TEST_ALLOC(bin);
 	rt_entro_hist(size,tab,m,iff,bin);
-	reqram = S*sizeof(double);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	double* const  p = malloc(S*sizeof(double));
-	PASSERT(p != NULL,"memory allocation failed");
+	TEST_RAM(S*sizeof(double));
+	double* const p = malloc(S*sizeof(double));
+	TEST_ALLOC(p);
 	const   double f = 1.0/(double)S;
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
@@ -429,33 +426,24 @@ double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const
 {
 	// 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iter iterations
 
-	ulong freeram,reqram;
-	const   size_t S = (size_t)POW2(m);
-	reqram = S*sizeof(ulong);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	ulong*  const  bin  = calloc(S,sizeof(ulong)); // zero-initialises
-	PASSERT(bin != NULL,"memory allocation failed");
-	const   size_t S2   = (size_t)POW2(2*m);
-	reqram = S2*sizeof(ulong);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	ulong*  const  bin2 = calloc(S2,sizeof(ulong)); // zero-initialises
-	PASSERT(bin2 != NULL,"memory allocation failed");
+	const size_t S = (size_t)POW2(m);
+	TEST_RAM(S*sizeof(ulong));
+	ulong* const bin = calloc(S,sizeof(ulong)); // zero-initialises
+	TEST_ALLOC(bin);
+	const size_t S2 = (size_t)POW2(2*m);
+	TEST_RAM(S2*sizeof(ulong));
+	ulong* const bin2 = calloc(S2,sizeof(ulong)); // zero-initialises
+	TEST_ALLOC(bin2);
 	rt_trent1_hist(rsiz,rtab,fsiz,ftab,m,iff,ilag,bin,bin2);
-	reqram = S*sizeof(double);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	double* const  p = malloc(S*sizeof(double));
-	PASSERT(p != NULL,"memory allocation failed");
-	const   double f = 1.0/(double)S;
+	TEST_RAM(S*sizeof(double));
+	double* const p = malloc(S*sizeof(double));
+	TEST_ALLOC(p);
+	const double f = 1.0/(double)S;
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
-	reqram = S2*sizeof(double);
-	freeram = get_free_ram();
-	ASSERT(reqram < freeram,"Unfeasible memory request!");
-	double* const  p2 = malloc(S2*sizeof(double));
-	PASSERT(p2 != NULL,"memory allocation failed");
+	TEST_RAM(S2*sizeof(double));
+	double* const p2 = malloc(S2*sizeof(double));
+	TEST_ALLOC(p2);
 	for (size_t y2=0; y2<S2; ++y2) p2[y2] = f*(double)bin2[y2];
 	const double H2 = entro2(S2,p2);
 	free(p2);

@@ -17,7 +17,7 @@ XRectangle* ca_xrects_create(
 	*nrects = mw_nsetbits(I*n,ca); // number of "on" cells
 
 	XRectangle* const rects = calloc(sizeof(XRectangle),(size_t)*nrects);
-	PASSERT(rects != NULL,"memory allocation failed");
+	TEST_ALLOC(rects);
 
 	const ushort uscpx = (ushort)ppc;
 	const int    xroff = (iright ? 2*(imx+gap+2)-ppc : imx+gap+2-ppc);

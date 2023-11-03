@@ -22,6 +22,14 @@
 #define ASSERT(cond,...)  {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); exit(EXIT_FAILURE);}}
 #define PASSERT(cond,...) {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}}
 
+#ifdef __linux__
+#define TEST_RAM(bytes) ASSERT((bytes) < get_free_ram(),"Unfeasible memory request!")
+#define TEST_ALLOC(ptr) // On Linux there's no point testing pointer for NULL after m/calloc :-/
+#else
+#define TEST_RAM(bytes)
+#define TEST_ALLOC(ptr) PASSERT((ptr) != NULL,"Memory allocation failed!")
+#endif
+
 /*********************************************************************/
 
 // entropy stuff
@@ -65,6 +73,7 @@ void hist(const size_t n, const double* const x, const size_t m, ulong* const  b
 static inline float* double2float_alloc(const size_t n, const double* const x)
 {
 	float* const xf = malloc(n*sizeof(float)); // !!! remember to free !!!
+	TEST_ALLOC(xf);
 	float* pf = xf;
 	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p;
 	return xf;

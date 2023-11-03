@@ -109,6 +109,7 @@ int sim_xplor(int argc, char* argv[])
 
 	// the image data
 	char* const imdata = im->data = malloc((uint)(im->bytes_per_line*imy));
+	TEST_ALLOC(imdata);
 	XInitImage(im);
 
 	// control variables

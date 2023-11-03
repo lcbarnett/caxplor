@@ -37,6 +37,7 @@ void caana_dps
 	const size_t q = m/2+1;   // half+1 bits in a CA row (fine, because WBITS even!)
 	const size_t Q = I*q;     // half+1 bits in the CA
 	double* const dps = malloc(Q*sizeof(double));
+	TEST_ALLOC(dps);
 	if (filtering) ca_dps(I,n,fca,dps,costab); else ca_dps(I,n,ca,dps,costab);
 	scale(Q,dps,1.0/((double)m*(double)m));
 	for (size_t i=0;i<Q;i+=q) dps[i] = NAN; // suppress S(0)
@@ -76,6 +77,7 @@ void caana_automi
 
 	// calculate aut-MI
 	double* const ami = malloc(Q*sizeof(double));
+	TEST_ALLOC(ami);
 	if (filtering) ca_automi(I,n,fca,ami); else ca_automi(I,n,ca,ami);
 	if (amice) {
 		for (size_t r=0;r<Q;r+=q) {
@@ -88,7 +90,9 @@ void caana_automi
 
 	// calculate medians per distance
 	double* const amik = malloc(I*sizeof(double));
+	TEST_ALLOC(amik);
 	double* const med  = malloc(q*sizeof(double));
+	TEST_ALLOC(med);
 	med[0] = NAN;
 	for (size_t k=1;k<q;++k) {
 		for (size_t r=0;r<I;++r) amik[r] = ami[q*r+k];

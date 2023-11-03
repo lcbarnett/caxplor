@@ -32,7 +32,9 @@ int sim_ana(int argc, char* argv[])
 	// allocate storage
 	bmax = (bmax == 0 ? POW2(rsiz-1) : bmax);
 	double*  const HH = calloc((bmax+1)*S,sizeof(double));
+	TEST_ALLOC(HH);
 	double** const H  = calloc(bmax+1,sizeof(double*));
+	TEST_ALLOC(H);
 	for (size_t b=0; b<=bmax; ++b) H[b] = HH+b*S;
 
 	// entropy calculation

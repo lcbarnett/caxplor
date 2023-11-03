@@ -94,7 +94,7 @@ void wd_autocov(const word_t w, double* const wac)
 word_t* mw_alloc(const size_t n)
 {
 	word_t* const w =  calloc(n,sizeof(word_t)); // note: calloc zero-initialises - this is a Good Thing
-	PASSERT(w != NULL,"memory allocation failed");
+	TEST_ALLOC(w);
 	return w;
 
 }
@@ -102,7 +102,7 @@ word_t* mw_alloc(const size_t n)
 word_t* mw_copy_alloc(const size_t n, const word_t* const wsrc)
 {
 	word_t* const wdest = malloc(n*sizeof(word_t));
-	PASSERT(wdest != NULL,"memory allocation failed");
+	TEST_ALLOC(wdest);
 	memcpy(wdest,wsrc,n*sizeof(word_t));
 	return wdest;
 }

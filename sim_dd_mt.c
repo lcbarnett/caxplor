@@ -152,6 +152,7 @@ int sim_dd_mt(int argc, char* argv[])
 		targ[tnum].tiff  = tiff;
 		targ[tnum].tlag  = tlag;
 		targ[tnum].tfarg = malloc((size_t)nfpert*sizeof(tfarg_t));
+		TEST_ALLOC(targ[tnum].tfarg);
 	}
 
 	// loop through rules/filters, setting up thread-dependent parameters
@@ -167,6 +168,7 @@ int sim_dd_mt(int argc, char* argv[])
 			tfarg->filt = f;
 			const size_t ofnlen = set_ofname(ofname,r,f,odir);
 			tfarg->ofname = malloc(ofnlen+1);
+			TEST_ALLOC(tfarg->ofname);
 			strncpy(tfarg->ofname,ofname,ofnlen+1);
 			if (++nfint == nfpert) {
 				targ[tnum].tnum  = tnum;
