@@ -33,23 +33,35 @@ int sim_ddr(int argc, char* argv[])
 	//
 	// Arg:   name      type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_VARG(rsize,    int,     5,            "CA rule size");
-	CLAP_VARG(rlam,     double,  0.6,          "CA rule lambda");
-	CLAP_CARG(rseed,    ulong,   0,            "CA rule random seed (or 0 for unpredictable)");
-	CLAP_VARG(fsize,    int,     5,            "filter rule size");
-	CLAP_VARG(flam,     double,  0.8,          "filter rule lambda");
-	CLAP_CARG(fseed,    ulong,   0,            "filter rule random seed (0 for unpredictable)");
-	CLAP_CARG(emmax,    int,     20,           "maximum sequence length for entropy calculation");
-	CLAP_CARG(eiff,     int,     1,            "advance before entropy");
-	CLAP_CARG(tmmax,    int,     14,           "maximum sequence length for DD calculation");
-	CLAP_CARG(tiff,     int,     0,            "advance before DD calculation");
-	CLAP_CARG(tlag,     int,     1,            "lag for DD calculation");
-	CLAP_CARG(nthreads, size_t,  4,            "number of threads");
-	CLAP_CARG(nfpert,   size_t,  10,           "number of rules/filters per thread");
-	CLAP_CARG(odir,     cstr,   "/tmp",        "output file directory");
+	CLAP_VARG(rsize,    int,     5,             "CA rule size");
+	CLAP_VARG(rlam,     double,  0.6,           "CA rule lambda");
+	CLAP_CARG(rseed,    ulong,   0,             "CA rule random seed (or 0 for unpredictable)");
+	CLAP_VARG(fsize,    int,     5,             "filter rule size");
+	CLAP_VARG(flammin,  double,  0.6,           "filter rule lambda range minimum");
+	CLAP_VARG(flammax,  double,  0.9,           "filter rule lambda range maximum");
+	CLAP_VARG(flamres,  size_t,  10,            "filter rule lambda range resolution");
+	CLAP_CARG(fseed,    ulong,   0,             "filter rule random seed (0 for unpredictable)");
+	CLAP_CARG(emmax,    int,     20,            "maximum sequence length for entropy calculation");
+	CLAP_CARG(eiff,     int,     1,             "advance before entropy");
+	CLAP_CARG(tmmax,    int,     14,            "maximum sequence length for DD calculation");
+	CLAP_CARG(tiff,     int,     0,             "advance before DD calculation");
+	CLAP_CARG(tlag,     int,     1,             "lag for DD calculation");
+	CLAP_CARG(nthreads, size_t,  4,             "number of threads");
+	CLAP_CARG(nfpert,   size_t,  10,            "number of rules/filters per thread");
+	CLAP_CARG(odir,     cstr,   "/tmp",         "output file directory");
+	CLAP_CARG(jobidx,   cstr,   "LSB_JOBINDEX", "job index");
 	puts("---------------------------------------------------------------------------------------\n");
 
-//	const size_t nrf = nthreads*nfpert;
+	// set filter lambda parameter from job index
+
+	double flams[flamres];
+	for (size_t k=0; k<flamres; ++k) flams[k] = flammin+(double)k*((flammax-flammin)/((double)(flamres-1)));
+	const char* const jobidxs = getenv(jobidx);
+	ASSERT(jobidxs != NULL,"Failed to find environmental variable \"%s\"",jobidx);
+	const size_t jnum = (size_t)atoi(jobidxs);
+	ASSERT(jnum < flamres, "Bad job index (%zu)",jnum);
+	const double flam = flams[jnum];
+	printf("*** Job number %zu: filter lambda = %g ***\n\n",jnum,flam);
 
 	// pseudo-random number generators
 
@@ -57,14 +69,14 @@ int sim_ddr(int argc, char* argv[])
 	mt_seed(&rrng,rseed);
 	mt_seed(&frng,fseed);
 
-	// generate rules and filters
+	// allocate and generate random rules and filters
 
-	word_t* const rbuf = malloc(nthreads*nfpert*POW2(rsize)*sizeof(word_t));
+	const size_t rfbufsize = nthreads*nfpert*POW2(rsize)*sizeof(word_t);
+	word_t* const rbuf = malloc(rfbufsize);
 	word_t* rtab[nthreads][nfpert];
 	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rtab[i][j] = rbuf+nfpert*i+j;
 	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rt_randomise(rsize,rtab[i][j],rlam,&rrng);
-
-	word_t* const fbuf = malloc(nthreads*nfpert*POW2(fsize)*sizeof(word_t));
+	word_t* const fbuf = malloc(rfbufsize);
 	word_t* ftab[nthreads][nfpert];
 	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) ftab[i][j] = fbuf+nfpert*i+j;
 	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rt_randomise(fsize,ftab[i][j],flam,&frng);
@@ -125,13 +137,19 @@ int sim_ddr(int argc, char* argv[])
 
 	// write out results
 
-	const size_t ofnlen = strlen(odir)+11;
+	const size_t ofnlen = strlen(odir)+20;
 	char ofname[ofnlen];
-	snprintf(ofname,ofnlen,"%s/caddr.dat",odir);
+	snprintf(ofname,ofnlen,"%s/caddr_%zu.dat",odir,jnum+1);
 	printf("\nWriting results to \"%s\"... ",ofname);
 	fflush(stdout);
 	FILE* const dfs = fopen(ofname,"w");
 	PASSERT(dfs != NULL,"Failed to open output file \"%s\"\n",ofname);
+	fprintf(dfs,"# rule    size    = %2d (lambda  = %8.6f)\n"
+	            "# filter  size    = %2d (lambda  = %8.6f)\n"
+	            "# entropy seqlen  = %2d (advance = %d)\n"
+	            "# dynind  seqlen  = %2d (advance = %d, lag = %d)\n"
+	            "# sample  size    = %zu\n\n"
+	            ,rsize,rlam,fsize,flam,emmax,eiff,tmmax,tiff,tlag,nthreads*nfpert);
 	for (size_t i=0; i<nthreads; ++i) {
 		const targ_t* const targ = &targs[i];
 		for (size_t j=0; j<targ->nfpert; ++j) {
