@@ -11,7 +11,8 @@ int sim_test  (int argc, char* argv[]);
 int sim_xplor (int argc, char* argv[]);
 #endif
 #ifdef HAVE_PTHREADS
-int sim_dd_mt (int argc, char* argv[]);
+int sim_ddf   (int argc, char* argv[]);
+int sim_ddr   (int argc, char* argv[]);
 #endif
 
 int main(int argc, char* argv[])
@@ -28,7 +29,8 @@ int main(int argc, char* argv[])
 		else if (strcmp(argv[1],"xplor")  == 0) res = sim_xplor (argc-2,argv+2);
 #endif
 #ifdef HAVE_PTHREADS
-		else if (strcmp(argv[1],"dd"   )  == 0) res = sim_dd_mt (argc-2,argv+2);
+		else if (strcmp(argv[1],"ddf"  )  == 0) res = sim_ddf   (argc-2,argv+2);
+		else if (strcmp(argv[1],"ddr"  )  == 0) res = sim_ddr   (argc-2,argv+2);
 #endif
 		else {
 			fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
@@ -57,7 +59,8 @@ int main(int argc, char* argv[])
 		puts("\txplor");
 #endif
 #ifdef HAVE_PTHREADS
-		puts("\tdd");
+		puts("\tddf");
+		puts("\tddr");
 #endif
 		putchar('\n');
 		return EXIT_SUCCESS;

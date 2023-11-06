@@ -31,7 +31,7 @@ endif
 
 ifeq ($(WITH_PTHREADS),1)
 	CC      += -pthread
-	SRC     += sim_dd_mt.c
+	SRC     += sim_ddf.c sim_ddr.c
 	DFLAGS  += -DHAVE_PTHREADS
 	LDFLAGS += -lpthread
 endif

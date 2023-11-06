@@ -22,9 +22,9 @@ typedef struct {
 	tfarg_t* tfargs;
 } targ_t;
 
-void* compfun(void* arg);
+static void* compfun(void* arg);
 
-int sim_dd_mt(int argc, char* argv[])
+int sim_ddf(int argc, char* argv[])
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -127,14 +127,14 @@ int sim_dd_mt(int argc, char* argv[])
 	pthread_attr_destroy(&attr);
 	for (int tnum=0; tnum<nthreads; ++tnum) {
 		const int tres = pthread_join(threads[tnum],NULL);
-		PASSERT(tres == 0,"unable to join thread %d",tnum+1)
+		PASSERT(tres == 0,"unable to join thread %d",tnum+1);
 	}
 
 	// write out results
 
-	const size_t ofnlen = strlen(odir)+10;
+	const size_t ofnlen = strlen(odir)+11;
 	char ofname[ofnlen];
-	snprintf(ofname,ofnlen,"%s/cadd.dat",odir);
+	snprintf(ofname,ofnlen,"%s/caddf.dat",odir);
 	printf("\nWriting results to \"%s\"... ",ofname);
 	fflush(stdout);
 	FILE* const dfs = fopen(ofname,"w");
