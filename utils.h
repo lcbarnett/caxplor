@@ -23,10 +23,10 @@
 #define PASSERT(cond,...) {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}}
 
 #ifdef __linux__
-#define TEST_RAM(bytes) ASSERT((bytes) < get_free_ram(),"Unfeasible memory request!")
+#define TEST_RAM(bytes) ASSERT((bytes) < get_free_ram(),"Unfeasible memory request!") // unreliable, but better than nowt
 #define TEST_ALLOC(ptr) // On Linux there's no point testing pointer for NULL after m/calloc :-/
 #else
-#define TEST_RAM(bytes)
+#define TEST_RAM(bytes) // not sure how to do this on other systems
 #define TEST_ALLOC(ptr) PASSERT((ptr) != NULL,"Memory allocation failed!")
 #endif
 

@@ -54,13 +54,11 @@ int sim_ddr(int argc, char* argv[])
 
 	// set filter lambda parameter from job index
 
-	double flams[flamres];
-	for (size_t k=0; k<flamres; ++k) flams[k] = flammin+(double)k*((flammax-flammin)/((double)(flamres-1)));
 	const char* const jobidxs = getenv(jobidx);
 	ASSERT(jobidxs != NULL,"Failed to find environmental variable \"%s\"",jobidx);
 	const size_t jnum = (size_t)atoi(jobidxs);
-	ASSERT(jnum < flamres, "Bad job index (%zu)",jnum);
-	const double flam = flams[jnum];
+	ASSERT(jnum > 0 && jnum <= flamres, "Bad job index (%zu)",jnum);
+	const double flam = flammin+(double)(jnum-1)*((flammax-flammin)/((double)(flamres-1)));
 	printf("*** Job number %zu: filter lambda = %g ***\n\n",jnum,flam);
 
 	// pseudo-random number generators
@@ -113,23 +111,16 @@ int sim_ddr(int argc, char* argv[])
 		}
 	}
 
-	// set up computational threads as joinable
-
-	pthread_t threads[nthreads];
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
-
 	// create threads
 
+	pthread_t threads[nthreads]; // NOTE: joinable by default (otherwise use pthread_attr_setdetachstate())
 	for (size_t i=0; i<nthreads; ++i) {
-		const int tres = pthread_create(&threads[i],&attr,compfun,(void*)&targs[i]);
+		const int tres = pthread_create(&threads[i],NULL,compfun,(void*)&targs[i]);
 		PASSERT(tres == 0,"unable to create thread %zu",i+1)
 	}
 
-	// free attribute and wait for computational threads to complete
+	// wait for computational threads to complete
 
-	pthread_attr_destroy(&attr);
 	for (size_t i=0; i<nthreads; ++i) {
 		const int tres = pthread_join(threads[i],NULL);
 		PASSERT(tres == 0,"unable to join thread %zu",i+1);
@@ -139,7 +130,7 @@ int sim_ddr(int argc, char* argv[])
 
 	const size_t ofnlen = strlen(odir)+20;
 	char ofname[ofnlen];
-	snprintf(ofname,ofnlen,"%s/caddr_%zu.dat",odir,jnum+1);
+	snprintf(ofname,ofnlen,"%s/caddr_%zu.dat",odir,jnum);
 	printf("\nWriting results to \"%s\"... ",ofname);
 	fflush(stdout);
 	FILE* const dfs = fopen(ofname,"w");
