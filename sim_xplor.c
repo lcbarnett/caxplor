@@ -133,8 +133,8 @@ int sim_xplor(int argc, char* argv[])
 		"Keys:\n"
 		"-----\n\n"
 		"h : display this help\n"
-		"m : toggle CA/filter mode\n"
-		"n : new random CA/filter\n"
+		"m : (or ESC) toggle CA/filter mode\n"
+		"n : (or SPACE) new random CA/filter\n"
 		"N : new CA/filter from user-supplied id\n"
 		"d : (or DEL) delete CA/filter\n"
 		"j : (or left-arrow) previous CA/filter\n"
@@ -154,7 +154,7 @@ int sim_xplor(int argc, char* argv[])
 #endif
 		"S : calculate CA spatial discrete power spectrum\n"
 		"I : calculate CA spatial auto-MI\n"
-		"q : (or ESC) exit program\n";
+		"q : exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
 
@@ -213,7 +213,9 @@ int sim_xplor(int argc, char* argv[])
 		char key;
 		KeySym keysym;
 		int kret = XLookupString(&event.xkey,&key,1,&keysym,NULL);
-		if (key == 27) key = 'q'; // map ESC to 'q' for quit
+//		if (key == 27) key = 'q'; // map ESC   to 'q' for quit
+		if (key == 27) key = 'm'; // map ESC   to 'm' for toggle mode
+		if (key == 32) key = 'n'; // map SPACE to 'n' for new
 		switch (keysym) {
 			case 65361: key = 'j'; kret = 1; break; // map left-arrow  to 'j' for prev
 			case 65363: key = 'k'; kret = 1; break; // map right-arrow to 'k' for next
