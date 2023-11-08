@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <stdio.h>
 
 #include "clap.h"
 #include "rtab.h"
@@ -28,10 +29,6 @@ static void* compfun(void* arg);
 
 int sim_ddr(int argc, char* argv[])
 {
-	// set stdout and stderr to line-buffered
-	//
-	// TODO
-
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
 	//
