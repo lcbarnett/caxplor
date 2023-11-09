@@ -68,19 +68,27 @@ int sim_ddr(int argc, char* argv[])
 	mt_seed(&rrng,rseed);
 	mt_seed(&frng,fseed);
 
-	// allocate and generate random rules and filters
+	// allocate buffers for random rules and filters
 
-	const size_t rfbufsize = nthreads*nfpert*POW2(rsize)*sizeof(word_t);
-	word_t* const rbuf = malloc(rfbufsize);
-	word_t* rtab[nthreads][nfpert];
-	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rtab[i][j] = rbuf+nfpert*i+j;
-	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rt_randomise(rsize,rtab[i][j],rlam,&rrng);
-	word_t* const fbuf = malloc(rfbufsize);
-	word_t* ftab[nthreads][nfpert];
-	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) ftab[i][j] = fbuf+nfpert*i+j;
-	for (size_t i=0; i<nthreads; ++i) for (size_t j=0; j<nfpert; ++j) rt_randomise(fsize,ftab[i][j],flam,&frng);
+	const   size_t rlen = POW2(rsize);
+	word_t* const  rbuf = malloc(nthreads*nfpert*rlen*sizeof(word_t));
 
-	// thread-independent parameters
+	const   size_t flen = POW2(fsize);
+	word_t* const  fbuf = malloc(nthreads*nfpert*flen*sizeof(word_t));
+
+	// allocate buffers for entropies and DD
+
+	const   size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
+	double* const  Hrbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+	double* const  Hfbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+	double* const  DDbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+
+	// allocate buffer for per-filter parameters
+
+	const size_t   tflen = sizeof(tfarg_t);
+	tfarg_t* const tfbuf = malloc(nthreads*nfpert*tflen);
+
+	// set up thread-independent parameters
 
 	targ_t targs[nthreads];
 	for (size_t i=0; i<nthreads; ++i) {
@@ -91,24 +99,28 @@ int sim_ddr(int argc, char* argv[])
 		targs[i].tmmax  = tmmax;
 		targs[i].tiff   = tiff;
 		targs[i].tlag   = tlag;
-		targs[i].tfargs = malloc(nfpert*sizeof(tfarg_t));
+		targs[i].tfargs = tfbuf + i*nfpert*tflen;
 		TEST_ALLOC(targs[i].tfargs);
 	}
 
 	// loop through rules/filters, setting up thread-dependent parameters
 
-	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
 	for (size_t i=0; i<nthreads; ++i) {
 		targ_t* const targ = &targs[i];
 		targ->tnum   = i;
 		targ->nfpert = nfpert;
+		word_t* const rbufi  = rbuf  + i*nfpert*rlen;
+		word_t* const fbufi  = fbuf  + i*nfpert*flen;
+		double* const Hrbufi = Hrbuf + i*nfpert*hlen;
+		double* const Hfbufi = Hfbuf + i*nfpert*hlen;
+		double* const DDbufi = DDbuf + i*nfpert*hlen;
 		for (size_t j=0; j<nfpert; ++j) {
 			tfarg_t* const tfarg = &targ->tfargs[j];
-			tfarg->rtab = rtab[i][j];
-			tfarg->ftab = ftab[i][j];
-			tfarg->Hr = malloc((size_t)hlen*sizeof(double));
-			tfarg->Hf = malloc((size_t)hlen*sizeof(double));
-			tfarg->DD = malloc((size_t)hlen*sizeof(double));
+			rt_randomise(rsize,tfarg->rtab = rbufi+j*rlen,rlam,&rrng);
+			rt_randomise(fsize,tfarg->ftab = fbufi+j*flen,flam,&frng);
+			tfarg->Hr = Hrbufi+j*hlen;
+			tfarg->Hf = Hfbufi+j*hlen;
+			tfarg->DD = DDbufi+j*hlen;
 		}
 	}
 
@@ -147,30 +159,23 @@ int sim_ddr(int argc, char* argv[])
 		for (size_t j=0; j<targ->nfpert; ++j) {
 			const tfarg_t* const tfarg = &targ->tfargs[j];
 			fprintf(dfs,"# rule id = ");
-			rt_fprint_id(targ->rsize,tfarg->rtab,dfs);
+			rt_fprint_id(rsize,tfarg->rtab,dfs);
 			fprintf(dfs,", filter id = ");
-			rt_fprint_id(targ->fsize,tfarg->ftab,dfs);
+			rt_fprint_id(fsize,tfarg->ftab,dfs);
 			fputc('\n',dfs);
-			for (int m=0; m<hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,tfarg->Hr[m],tfarg->Hf[m],tfarg->DD[m]);
+			for (int m=0; m<(int)hlen; ++m) fprintf(dfs,"%4d\t%8.6f\t%8.6f\t%8.6f\n",m,tfarg->Hr[m],tfarg->Hf[m],tfarg->DD[m]);
 			fputs("\n",dfs);
 		}
 	}
 	if (fclose(dfs) == -1) PEEXIT("Failed to close output file \"%s\"\n",ofname);
 	puts("done");
 
-	// clean up
+	// free buffers
 
-	for (size_t i=0; i<nthreads; ++i) {
-		const targ_t* const targ = &targs[i];
-		for (size_t j=0; j<targ->nfpert; ++j) {
-			const tfarg_t* const tfarg = &targ->tfargs[j];
-			free(tfarg->DD);
-			free(tfarg->Hf);
-			free(tfarg->Hr);
-		}
-		free(targ->tfargs);
-	}
-
+	free(tfbuf);
+	free(DDbuf);
+	free(Hfbuf);
+	free(Hrbuf);
 	free(fbuf);
 	free(rbuf);
 
