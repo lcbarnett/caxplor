@@ -102,10 +102,12 @@ int sim_ddr(int argc, char* argv[])
 		targs[i].tfargs = tfbuf + i*nfpert*tflen;
 		TEST_ALLOC(targs[i].tfargs);
 	}
+fprintf(stderr,"AAA\n");
 
 	// loop through rules/filters, setting up thread-dependent parameters
 
 	for (size_t i=0; i<nthreads; ++i) {
+fprintf(stderr,"i = %zu\n",i);
 		targ_t* const targ = &targs[i];
 		targ->tnum   = i;
 		targ->nfpert = nfpert;
@@ -115,6 +117,7 @@ int sim_ddr(int argc, char* argv[])
 		double* const Hfbufi = Hfbuf + i*nfpert*hlen;
 		double* const DDbufi = DDbuf + i*nfpert*hlen;
 		for (size_t j=0; j<nfpert; ++j) {
+fprintf(stderr,"\tj = %zu\n",j);
 			tfarg_t* const tfarg = &targ->tfargs[j];
 			rt_randomise(rsize,tfarg->rtab = rbufi+j*rlen,rlam,&rrng);
 			rt_randomise(fsize,tfarg->ftab = fbufi+j*flen,flam,&frng);
@@ -123,7 +126,6 @@ int sim_ddr(int argc, char* argv[])
 			tfarg->DD = DDbufi+j*hlen;
 		}
 	}
-
 	// create threads
 
 	pthread_t threads[nthreads]; // NOTE: joinable by default (otherwise use pthread_attr_setdetachstate())
