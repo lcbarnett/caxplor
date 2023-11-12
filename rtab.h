@@ -89,10 +89,8 @@ void    rt_fprint_id   (const int size, const word_t* const tab, FILE* const fst
 void    rt_print       (const int size, const word_t* const tab);
 size_t  rt_sprint_id   (const int size, const word_t* const tab, size_t sbuflen, char* const str);
 void    rt_print_id    (const int size, const word_t* const tab);
-void    rt_entro_hist  (const int size, const word_t* const tab,  const int m, const int iff, ulong* const bin);
-double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff);
-void    rt_trent1_hist (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2);
-double  rt_trent1      (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag);
+double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff, ulong* const bin);
+double  rt_trent1      (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2);
 
 static const char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 

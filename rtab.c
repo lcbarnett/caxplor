@@ -375,42 +375,43 @@ word_t* rt_sread_id(const char* const str, int* const size) // allocates rule ta
 	return tab; // success
 }
 
-void rt_entro_hist(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
+double rt_entro(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
 {
-	// Entropy histogram for CA rule on sequence of length m after iter iterations
+	// Entropy for CA rule on sequence of length m after iff iterations
+
+	ASSERT(sizeof(double) == sizeof(ulong),"This won't work!");
+
+	// Construct histogram
 
 	const size_t S = (size_t)POW2(m);
+	for (size_t y=0; y<S; ++y) bin[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
 		word_t y = x;
 		for (int i=0; i<iff; ++i) y = wd_filter(m,y,size,tab); // advance CA (at least 1)
 		++bin[y];
 	}
-}
 
-double rt_entro(const int size, const word_t* const tab, const int m, const int iff)
-{
-	// Entropy for CA rule on sequence of length m after iter iterations
-	const size_t S = (size_t)POW2(m);
-	TEST_RAM(S*sizeof(ulong));
-	ulong*  const bin = calloc(S,sizeof(ulong)); // zero-initialises
-	TEST_ALLOC(bin);
-	rt_entro_hist(size,tab,m,iff,bin);
-	TEST_RAM(S*sizeof(double));
-	double* const p = malloc(S*sizeof(double));
-	TEST_ALLOC(p);
+	// Calculate entropy
+
 	const   double f = 1.0/(double)S;
+	double* const p = (double* const)bin; // alias histogram as double array (!)
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
-	free(p);
-	free(bin);
 	return H;
 }
 
-void rt_trent1_hist(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2)
+double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2)
 {
-	// 1-lag transfer entropy histograms for CA rule and filter rule on sequence of length m after iter iterations
+	// 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iff iterations, with lag ilag
 
-	const size_t S = (size_t)POW2(m);
+	ASSERT(sizeof(double) == sizeof(ulong),"This won't work!");
+
+	// Construct histograms
+
+	const size_t S  = (size_t)POW2(m);
+	const size_t S2 = (size_t)POW2(2*m);
+	for (size_t y=0; y<S;  ++y) bin[y]  = 0;
+	for (size_t y=0; y<S2; ++y) bin2[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
 		word_t y = x;
 		for (int i=0; i<iff; ++i) y = wd_filter(m,y,rsiz,rtab);  // advance CA (may be zero)
@@ -420,35 +421,15 @@ void rt_trent1_hist(const int rsiz, const word_t* const rtab, const int fsiz, co
 		const word_t v = wd_filter(m,y,fsiz,ftab);               // filter CA
 		++bin2[u+S*v];
 	}
-}
 
-double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag)
-{
-	// 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iter iterations
+	// Calculate entropies
 
-	const size_t S = (size_t)POW2(m);
-	TEST_RAM(S*sizeof(ulong));
-	ulong* const bin = calloc(S,sizeof(ulong)); // zero-initialises
-	TEST_ALLOC(bin);
-	const size_t S2 = (size_t)POW2(2*m);
-	TEST_RAM(S2*sizeof(ulong));
-	ulong* const bin2 = calloc(S2,sizeof(ulong)); // zero-initialises
-	TEST_ALLOC(bin2);
-	rt_trent1_hist(rsiz,rtab,fsiz,ftab,m,iff,ilag,bin,bin2);
-	TEST_RAM(S*sizeof(double));
-	double* const p = malloc(S*sizeof(double));
-	TEST_ALLOC(p);
 	const double f = 1.0/(double)S;
+	double* const p = (double* const)bin; // alias histogram as double array (!)
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
-	TEST_RAM(S2*sizeof(double));
-	double* const p2 = malloc(S2*sizeof(double));
-	TEST_ALLOC(p2);
+	double* const p2 = (double* const)bin2; // alias histogram as double array (!)
 	for (size_t y2=0; y2<S2; ++y2) p2[y2] = f*(double)bin2[y2];
 	const double H2 = entro2(S2,p2);
-	free(p2);
-	free(p);
-	free(bin2);
-	free(bin);
 	return H2-H;
 }

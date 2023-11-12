@@ -60,7 +60,7 @@ int sim_ddr(int argc, char* argv[])
 	const size_t jnum = (size_t)atoi(jobidxs);
 	ASSERT(jnum > 0 && jnum <= flamres, "Bad job index (%zu)",jnum);
 	const double flam = flammin+(double)(jnum-1)*((flammax-flammin)/((double)(flamres-1)));
-	printf("*** Job number %zu: filter lambda = %g ***\n\n",jnum,flam);
+	printf("*** Job number %zu: filter lambda = %g\n\n",jnum,flam);
 
 	// pseudo-random number generators
 
@@ -69,6 +69,8 @@ int sim_ddr(int argc, char* argv[])
 	mt_seed(&frng,fseed);
 
 	// allocate buffers for random rules and filters
+
+	printf("*** Allocating storage\n\n");
 
 	const   size_t rlen = POW2(rsize);
 	word_t* const  rbuf = malloc(nthreads*nfpert*rlen*sizeof(word_t));
@@ -86,6 +88,8 @@ int sim_ddr(int argc, char* argv[])
 	// allocate buffer for per-filter parameters
 
 	tfarg_t* const tfbuf = malloc(nthreads*nfpert*sizeof(tfarg_t));
+
+	printf("*** Setting up simulation parameters storage\n\n");
 
 	// set up thread-independent parameters
 
@@ -122,7 +126,10 @@ int sim_ddr(int argc, char* argv[])
 			tfarg->DD = DDbufi+j*hlen;
 		}
 	}
+
 	// create threads
+
+	printf("*** Creating %zu threads with %zu simulations per thread\n\n",nthreads,nfpert);
 
 	pthread_t threads[nthreads]; // NOTE: joinable by default (otherwise use pthread_attr_setdetachstate())
 	for (size_t i=0; i<nthreads; ++i) {
@@ -142,7 +149,7 @@ int sim_ddr(int argc, char* argv[])
 	const size_t ofnlen = strlen(odir)+20;
 	char ofname[ofnlen];
 	snprintf(ofname,ofnlen,"%s/caddr_%zu.dat",odir,jnum);
-	printf("\nWriting results to \"%s\"... ",ofname);
+	printf("\n*** Writing results to \"%s\"... ",ofname);
 	fflush(stdout);
 	FILE* const dfs = fopen(ofname,"w");
 	PASSERT(dfs != NULL,"Failed to open output file \"%s\"\n",ofname);
@@ -166,9 +173,11 @@ int sim_ddr(int argc, char* argv[])
 		}
 	}
 	if (fclose(dfs) == -1) PEEXIT("Failed to close output file \"%s\"\n",ofname);
-	puts("done");
+	puts("done\n");
 
 	// free buffers
+
+	printf("*** Freeing memory\n");
 
 	free(tfbuf);
 	free(DDbuf);
@@ -201,6 +210,16 @@ void* compfun(void* arg)
 	const int hlen   = (emmax > tmmax ? emmax : tmmax)+1;
 	const int rfsize = rsize > fsize ? rsize : fsize;
 
+	const size_t S = (size_t)POW2(emmax);
+	TEST_RAM(S*sizeof(ulong));
+	ulong* const bin = malloc(S*sizeof(ulong));
+	TEST_ALLOC(bin);
+
+	const size_t S2 = (size_t)POW2(2*tmmax);
+	TEST_RAM(S2*sizeof(ulong));
+	ulong* const bin2 = malloc(S2*sizeof(ulong));
+	TEST_ALLOC(bin2);
+
 	for (size_t j=0; j<nfpert; ++j) {
 
 		const tfarg_t* const tfarg = &targ->tfargs[j];
@@ -214,9 +233,9 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
 		for (int m=0; m<hlen; ++m) Hf[m] = NAN;
 		for (int m=0; m<hlen; ++m) DD[m] = NAN;
-		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff)/(double)m;
-		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff)/(double)m;
-		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag)/(double)m;
+		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff,bin)/(double)m;
+		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff,bin)/(double)m;
+		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag,bin,bin2)/(double)m;
 
 		flockfile(stdout); // prevent another thread butting in!
 		printf("\tthread %2zu : filter %2zu of %2zu : rule id = ",tnum+1,j+1,nfpert);
@@ -227,6 +246,9 @@ void* compfun(void* arg)
 		fflush(stdout);
 		funlockfile(stdout);
 	}
+
+	free(bin2);
+	free(bin);
 
 	printf("thread %2zu : FINISHED\n",tnum+1);
 	fflush(stdout);

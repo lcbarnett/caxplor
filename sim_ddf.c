@@ -190,6 +190,16 @@ void* compfun(void* arg)
 	const int tlag  = targs->tlag;
 	const int hlen  = (emmax > tmmax ? emmax : tmmax)+1;
 
+	const size_t S = (size_t)POW2(emmax);
+	TEST_RAM(S*sizeof(ulong));
+	ulong* const bin = malloc(S*sizeof(ulong));
+	TEST_ALLOC(bin);
+
+	const size_t S2 = (size_t)POW2(2*tmmax);
+	TEST_RAM(S2*sizeof(ulong));
+	ulong* const bin2 = malloc(S2*sizeof(ulong));
+	TEST_ALLOC(bin2);
+
 	const tfarg_t* const tfargs = targs->tfargs;
 
 	for (int i=0; i<nfint; ++i) {
@@ -207,9 +217,9 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
 		for (int m=0; m<hlen; ++m) Hf[m] = NAN;
 		for (int m=0; m<hlen; ++m) DD[m] = NAN;
-		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff)/(double)m;
-		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff)/(double)m;
-		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag)/(double)m;
+		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff,bin)/(double)m;
+		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff,bin)/(double)m;
+		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag,bin,bin2)/(double)m;
 
 		flockfile(stdout); // prevent another thread butting in!
 		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum+1,i+1,nfint);
@@ -223,6 +233,9 @@ void* compfun(void* arg)
 
 	printf("thread %2d : FINISHED\n",tnum+1);
 	fflush(stdout);
+
+	free(bin2);
+	free(bin);
 
 	pthread_exit(NULL);
 }

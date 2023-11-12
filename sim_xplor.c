@@ -600,12 +600,17 @@ int sim_xplor(int argc, char* argv[])
 		case 'e': // calculate CA/filter entropy
 
 			printf("calculating CA/filter entropy");
+			const size_t Se = (size_t)POW2(emmax);
+			TEST_RAM(Se*sizeof(ulong));
+			ulong* const bine = malloc(Se*sizeof(ulong));
+			TEST_ALLOC(bine);
 			for (int m=0; m<hlen; ++m) H[m] = NAN;
-			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
+			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bine)/(double)m;
 			if (filtering && rule->filt != NULL) {
 				for (int m=0; m<hlen; ++m) Hf[m] = NAN;
-				for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
+				for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff,bine)/(double)m;
 			}
+			free(bine);
 			char gpename[] = "caentro";
 			FILE* const gped = gp_dopen(gpename,gpdir);
 			if (filtering && rule->filt != NULL) {
@@ -654,13 +659,23 @@ int sim_xplor(int argc, char* argv[])
 				break;
 			}
 			printf("calculating CA/filter dynamical dependence");
-			for (int m=0; m<hlen; ++m)H[m] = NAN;
-			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff)/(double)m;
+			const size_t St = (size_t)POW2(emmax);
+			TEST_RAM(St*sizeof(ulong));
+			ulong* const bint = malloc(St*sizeof(ulong));
+			TEST_ALLOC(bint);
+			const size_t S2t = (size_t)POW2(2*tmmax);
+			TEST_RAM(S2t*sizeof(ulong));
+			ulong* const bin2t = malloc(S2t*sizeof(ulong));
+			TEST_ALLOC(bin2t);
+			for (int m=0; m<hlen; ++m) H[m] = NAN;
+			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bint)/(double)m;
 			for (int m=0; m<hlen; ++m) Hf[m] = NAN;
-			for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff)/(double)m;
+			for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff,bint)/(double)m;
 			const int mmin = rule->size > rule->filt->size ? rule->size : rule->filt->size;
 			for (int m=0; m<hlen; ++m) Tf[m] = NAN;
-			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag)/(double)m;
+			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag,bint,bin2t)/(double)m;
+			free(bin2t);
+			free(bint);
 			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
 			char gptname[] = "cadd";
 			FILE* const gptd = gp_dopen(gptname,gpdir);
