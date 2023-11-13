@@ -211,13 +211,13 @@ void* compfun(void* arg)
 	const int rfsize = rsize > fsize ? rsize : fsize;
 
 	const size_t S = (size_t)POW2(emmax);
-	TEST_RAM(S*sizeof(ulong));
-	ulong* const bin = malloc(S*sizeof(ulong));
+	TEST_RAM(S*sizeof(uint64_t));
+	uint64_t* const bin = malloc(S*sizeof(uint64_t));
 	TEST_ALLOC(bin);
 
 	const size_t S2 = (size_t)POW2(2*tmmax);
-	TEST_RAM(S2*sizeof(ulong));
-	ulong* const bin2 = malloc(S2*sizeof(ulong));
+	TEST_RAM(S2*sizeof(uint64_t));
+	uint64_t* const bin2 = malloc(S2*sizeof(uint64_t));
 	TEST_ALLOC(bin2);
 
 	for (size_t j=0; j<nfpert; ++j) {

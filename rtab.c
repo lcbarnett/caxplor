@@ -375,11 +375,9 @@ word_t* rt_sread_id(const char* const str, int* const size) // allocates rule ta
 	return tab; // success
 }
 
-double rt_entro(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
+double rt_entro(const int size, const word_t* const tab, const int m, const int iff, uint64_t* const bin)
 {
 	// Entropy for CA rule on sequence of length m after iff iterations
-
-	ASSERT(sizeof(double) == sizeof(ulong),"This won't work!");
 
 	// Construct histogram
 
@@ -393,18 +391,16 @@ double rt_entro(const int size, const word_t* const tab, const int m, const int 
 
 	// Calculate entropy
 
-	const   double f = 1.0/(double)S;
+	const double f = 1.0/(double)S;
 	double* const p = (double* const)bin; // alias histogram as double array (!)
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
 	return H;
 }
 
-double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2)
+double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, uint64_t* const bin, uint64_t* const bin2)
 {
 	// 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iff iterations, with lag ilag
-
-	ASSERT(sizeof(double) == sizeof(ulong),"This won't work!");
 
 	// Construct histograms
 

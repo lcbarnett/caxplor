@@ -17,7 +17,7 @@ int sim_ana(int argc, char* argv[])
 	CLAP_CARG(bseed,   ulong,   0,            "CA rule random seed (0 for unpredictable)");
 	CLAP_CARG(m,       int,     20,           "CA sequence length for entropy calculation");
 	CLAP_CARG(iters,   int,     1,            "CA iterations before entropy calculation");
-	CLAP_CARG(samps,       size_t,  100,          "sample size");
+	CLAP_CARG(samps,   size_t,  100,          "sample size");
 	puts("---------------------------------------------------------------------------------------\n");
 
 	sm_create(sm);
@@ -39,8 +39,8 @@ int sim_ana(int argc, char* argv[])
 
 	// entropy calculation
 	const size_t S = (size_t)POW2(m);
-	TEST_RAM(S*sizeof(ulong));
-	ulong* const bin = malloc(S*sizeof(ulong));
+	TEST_RAM(S*sizeof(uint64_t));
+	uint64_t* const bin = malloc(S*sizeof(uint64_t));
 	TEST_ALLOC(bin);
 	const double oom = 1.0/(double)m;
 	for (size_t b=0; b<=bmax; ++b) {

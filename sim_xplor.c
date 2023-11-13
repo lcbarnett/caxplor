@@ -601,8 +601,8 @@ int sim_xplor(int argc, char* argv[])
 
 			printf("calculating CA/filter entropy");
 			const size_t Se = (size_t)POW2(emmax);
-			TEST_RAM(Se*sizeof(ulong));
-			ulong* const bine = malloc(Se*sizeof(ulong));
+			TEST_RAM(Se*sizeof(uint64_t));
+			uint64_t* const bine = malloc(Se*sizeof(uint64_t));
 			TEST_ALLOC(bine);
 			for (int m=0; m<hlen; ++m) H[m] = NAN;
 			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bine)/(double)m;
@@ -660,12 +660,12 @@ int sim_xplor(int argc, char* argv[])
 			}
 			printf("calculating CA/filter dynamical dependence");
 			const size_t St = (size_t)POW2(emmax);
-			TEST_RAM(St*sizeof(ulong));
-			ulong* const bint = malloc(St*sizeof(ulong));
+			TEST_RAM(St*sizeof(uint64_t));
+			uint64_t* const bint = malloc(St*sizeof(uint64_t));
 			TEST_ALLOC(bint);
 			const size_t S2t = (size_t)POW2(2*tmmax);
-			TEST_RAM(S2t*sizeof(ulong));
-			ulong* const bin2t = malloc(S2t*sizeof(ulong));
+			TEST_RAM(S2t*sizeof(uint64_t));
+			uint64_t* const bin2t = malloc(S2t*sizeof(uint64_t));
 			TEST_ALLOC(bin2t);
 			for (int m=0; m<hlen; ++m) H[m] = NAN;
 			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bint)/(double)m;
