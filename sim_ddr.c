@@ -74,20 +74,26 @@ int sim_ddr(int argc, char* argv[])
 
 	const   size_t rlen = POW2(rsize);
 	word_t* const  rbuf = malloc(nthreads*nfpert*rlen*sizeof(word_t));
+	TEST_ALLOC(rbuf);
 
 	const   size_t flen = POW2(fsize);
 	word_t* const  fbuf = malloc(nthreads*nfpert*flen*sizeof(word_t));
+	TEST_ALLOC(fbuf);
 
 	// allocate buffers for entropies and DD
 
 	const   size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
 	double* const  Hrbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+	TEST_ALLOC(Hrbuf);
 	double* const  Hfbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+	TEST_ALLOC(Hfbuf);
 	double* const  DDbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
+	TEST_ALLOC(DDbuf);
 
 	// allocate buffer for per-filter parameters
 
 	tfarg_t* const tfbuf = malloc(nthreads*nfpert*sizeof(tfarg_t));
+	TEST_ALLOC(tfbuf);
 
 	printf("*** Setting up simulation parameters storage\n\n");
 
@@ -103,7 +109,6 @@ int sim_ddr(int argc, char* argv[])
 		targs[i].tiff   = tiff;
 		targs[i].tlag   = tlag;
 		targs[i].tfargs = tfbuf + i*nfpert;
-		TEST_ALLOC(targs[i].tfargs);
 	}
 
 	// loop through rules/filters, setting up thread-dependent parameters
