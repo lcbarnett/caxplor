@@ -89,8 +89,26 @@ void    rt_fprint_id   (const int size, const word_t* const tab, FILE* const fst
 void    rt_print       (const int size, const word_t* const tab);
 size_t  rt_sprint_id   (const int size, const word_t* const tab, size_t sbuflen, char* const str);
 void    rt_print_id    (const int size, const word_t* const tab);
-double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff, uint64_t* const bin);
-double  rt_trent1      (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, uint64_t* const bin, uint64_t* const bin2);
+
+double rt_entro( // Entropy for CA rule on sequence of length m after iff iterations
+	const int           size,
+	const word_t* const tab,
+	const int           m,
+	const int           iff,
+	uint64_t*     const bin
+);
+
+double rt_trent1( // 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iff iterations, with lag ilag
+	const int           rsiz,
+	const word_t* const rtab,
+	const int           fsiz,
+	const word_t* const ftab,
+	const int           m,
+	const int           iff,
+	const int           ilag,
+	uint64_t*     const bin,
+	uint64_t*     const bin2
+);
 
 static const char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
