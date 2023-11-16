@@ -38,7 +38,7 @@ int sim_ana(int argc, char* argv[])
 	for (size_t b=0; b<=bmax; ++b) H[b] = HH+b*samps;
 
 	// entropy calculation
-	const size_t S = (size_t)POW2(m);
+	const size_t S = POW2(m);
 	TEST_RAM(S*sizeof(uint64_t));
 	uint64_t* const bin = malloc(S*sizeof(uint64_t));
 	TEST_ALLOC(bin);

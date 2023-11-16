@@ -190,12 +190,12 @@ void* compfun(void* arg)
 	const int tlag  = targs->tlag;
 	const int hlen  = (emmax > tmmax ? emmax : tmmax)+1;
 
-	const size_t S = (size_t)POW2(emmax);
+	const size_t S = POW2(emmax);
 	TEST_RAM(S*sizeof(uint64_t));
 	uint64_t* const bin = malloc(S*sizeof(uint64_t));
 	TEST_ALLOC(bin);
 
-	const size_t S2 = (size_t)POW2(2*tmmax);
+	const size_t S2 = POW2(2*tmmax);
 	TEST_RAM(S2*sizeof(uint64_t));
 	uint64_t* const bin2 = malloc(S2*sizeof(uint64_t));
 	TEST_ALLOC(bin2);

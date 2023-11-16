@@ -600,7 +600,7 @@ int sim_xplor(int argc, char* argv[])
 		case 'E': // calculate entropy of CA rule
 
 			printf("calculating CA/filter entropy");
-			const size_t Se = (size_t)POW2(emmax);
+			const size_t Se = POW2(emmax);
 			TEST_RAM(Se*sizeof(uint64_t));
 			uint64_t* const bine = malloc(Se*sizeof(uint64_t));
 			TEST_ALLOC(bine);
@@ -659,11 +659,11 @@ int sim_xplor(int argc, char* argv[])
 				break;
 			}
 			printf("calculating CA/filter dynamical dependence");
-			const size_t St = (size_t)POW2(emmax);
+			const size_t St = POW2(emmax);
 			TEST_RAM(St*sizeof(uint64_t));
 			uint64_t* const bint = malloc(St*sizeof(uint64_t));
 			TEST_ALLOC(bint);
-			const size_t S2t = (size_t)POW2(2*tmmax);
+			const size_t S2t = POW2(2*tmmax);
 			TEST_RAM(S2t*sizeof(uint64_t));
 			uint64_t* const bin2t = malloc(S2t*sizeof(uint64_t));
 			TEST_ALLOC(bin2t);

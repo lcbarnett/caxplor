@@ -386,7 +386,7 @@ double rt_entro( // Entropy for CA rule on sequence of length m after iff iterat
 {
 	// Construct histogram
 
-	const size_t S = (size_t)POW2(m);
+	const size_t S = POW2(m);
 	for (size_t y=0; y<S; ++y) bin[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
 		word_t y = x;
@@ -417,8 +417,8 @@ double rt_dd( // dynamical dependence for CA/filter rules on sequence of length 
 {
 	// Construct histograms
 
-	const size_t S  = (size_t)POW2(m);
-	const size_t S2 = (size_t)POW2(2*m);
+	const size_t S  = POW2(m);
+	const size_t S2 = POW2(2*m);
 	for (size_t y=0; y<S;  ++y) bin[y]  = 0;
 	for (size_t y=0; y<S2; ++y) bin2[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
