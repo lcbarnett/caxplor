@@ -219,7 +219,7 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) DD[m] = NAN;
 		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff,bin)/(double)m;
 		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff,bin)/(double)m;
-		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_trent1(rsize,rtab,fsize,ftab,m,tiff,tlag,bin,bin2)/(double)m;
+		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_dd   (rsize,rtab,fsize,ftab,m,tiff,tlag,bin,bin2)/(double)m;
 
 		flockfile(stdout); // prevent another thread butting in!
 		printf("\tthread %2d : filter %2d of %2d : rule id = ",tnum+1,i+1,nfint);

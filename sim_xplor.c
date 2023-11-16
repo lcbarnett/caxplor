@@ -145,8 +145,8 @@ int sim_xplor(int argc, char* argv[])
 		"v : invert CA/filter\n"
 		"f : forward CA one screen\n"
 		"i : re-initialise CA\n"
-		"e : plot entropy of CA rule\n"
-		"t : plot 1-lag DD of CA rule and filter rule\n"
+		"E : calculate entropy of CA rule\n"
+		"D : calculate dynamical dependence of CA/filter rules\n"
 		"p : calculate CA period\n"
 		"s : save CA/filter id to file\n"
 #ifdef HAVE_GD
@@ -597,7 +597,7 @@ int sim_xplor(int argc, char* argv[])
 			caana_period(n,I,ca,rule,prff,pmax);
 			break;
 
-		case 'e': // calculate CA/filter entropy
+		case 'E': // calculate entropy of CA rule
 
 			printf("calculating CA/filter entropy");
 			const size_t Se = (size_t)POW2(emmax);
@@ -648,7 +648,7 @@ int sim_xplor(int argc, char* argv[])
 			gp_fplot(gpename,gpdir);
 			break;
 
-		case 't': // calculate CA/filter 1-lag DD
+		case 'D': // calculate dynamical dependence of CA/filter rules
 
 			if (!filtering) {
 				printf("not in filtering mode!\n");
@@ -673,7 +673,7 @@ int sim_xplor(int argc, char* argv[])
 			for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff,bint)/(double)m;
 			const int mmin = rule->size > rule->filt->size ? rule->size : rule->filt->size;
 			for (int m=0; m<hlen; ++m) Tf[m] = NAN;
-			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_trent1(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag,bint,bin2t)/(double)m;
+			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_dd(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag,bint,bin2t)/(double)m;
 			free(bin2t);
 			free(bint);
 			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
