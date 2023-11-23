@@ -24,7 +24,7 @@ typedef struct {
 
 static void* compfun(void* arg);
 
-int sim_ddf(int argc, char* argv[])
+int sim_ddf(int argc, char* argv[], int info)
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -40,6 +40,8 @@ int sim_ddf(int argc, char* argv[])
 	CLAP_CARG(nthreads, int,     4,            "number of threads");
 	CLAP_CARG(odir,     cstr,   "/tmp",        "output file directory");
 	puts("---------------------------------------------------------------------------------------\n");
+
+	if (info) return EXIT_SUCCESS; // display switches and return
 
 	// Read in rule/filter rtids
 

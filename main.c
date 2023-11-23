@@ -4,16 +4,18 @@
 
 #include "utils.h"
 
-int sim_ana   (int argc, char* argv[]);
-int sim_bmark (int argc, char* argv[]);
-int sim_test  (int argc, char* argv[]);
+int sim_ana   (int argc, char* argv[], int info);
+int sim_bmark (int argc, char* argv[], int info);
+int sim_test  (int argc, char* argv[], int info);
 #ifdef HAVE_X11
-int sim_xplor (int argc, char* argv[]);
+int sim_xplor (int argc, char* argv[], int info);
 #endif
 #ifdef HAVE_PTHREADS
-int sim_ddf   (int argc, char* argv[]);
-int sim_ddr   (int argc, char* argv[]);
+int sim_ddf   (int argc, char* argv[], int info);
+int sim_ddr   (int argc, char* argv[], int info);
 #endif
+
+typedef int (*sim_t)(int argc, char* argv[], int info);
 
 int main(int argc, char* argv[])
 {
@@ -21,21 +23,27 @@ int main(int argc, char* argv[])
 	const double cts = get_cpu_time ();
 
 	int res;
+	sim_t sim;
 	if (argc > 1) {
-		if      (strcmp(argv[1],"ana"  )  == 0) res = sim_ana   (argc-2,argv+2);
-		else if (strcmp(argv[1],"bmark")  == 0) res = sim_bmark (argc-2,argv+2);
-		else if (strcmp(argv[1],"test" )  == 0) res = sim_test  (argc-2,argv+2);
+		if      (strcmp(argv[1],"ana"  )  == 0) sim = sim_ana;
+		else if (strcmp(argv[1],"bmark")  == 0) sim = sim_bmark;
+		else if (strcmp(argv[1],"test" )  == 0) sim = sim_test;
 #ifdef HAVE_X11
-		else if (strcmp(argv[1],"xplor")  == 0) res = sim_xplor (argc-2,argv+2);
+		else if (strcmp(argv[1],"xplor")  == 0) sim = sim_xplor;
 #endif
 #ifdef HAVE_PTHREADS
-		else if (strcmp(argv[1],"ddf"  )  == 0) res = sim_ddf   (argc-2,argv+2);
-		else if (strcmp(argv[1],"ddr"  )  == 0) res = sim_ddr   (argc-2,argv+2);
+		else if (strcmp(argv[1],"ddf"  )  == 0) sim = sim_ddf;
+		else if (strcmp(argv[1],"ddr"  )  == 0) sim = sim_ddr;
 #endif
 		else {
 			fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
 			return EXIT_FAILURE;
 		}
+		if (argc > 2 && strcmp(argv[2],"-i") == 0) { // "dry run": display switches and exit
+			sim(argc-3,argv+3,1);
+			return EXIT_SUCCESS;
+		}
+		res = sim(argc-2,argv+2,0); // run the sim
 	}
 	else {
 		puts("\ncaxplor compile options:");

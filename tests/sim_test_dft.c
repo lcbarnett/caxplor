@@ -37,7 +37,7 @@ void mw_autocov_ref(const size_t n, const word_t* const w, double* const ac)
 	}
 }
 
-int sim_test(int argc, char* argv[])
+int sim_test(int argc, char* argv[], int info)
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -50,6 +50,8 @@ int sim_test(int argc, char* argv[])
 	CLAP_CARG(disp,    int,     1,            "display result?");
 	CLAP_CARG(logs,    int,     0,            "log scale?");
 	puts("---------------------------------------------------------------------------------------\n");
+
+	if (info) return EXIT_SUCCESS; // display switches and return
 
 	mt_t rng;
 	mt_seed(&rng,seed);

@@ -5,7 +5,7 @@
 #include "clap.h"
 #include "strman.h"
 
-int sim_ana(int argc, char* argv[])
+int sim_ana(int argc, char* argv[], int info)
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -19,6 +19,8 @@ int sim_ana(int argc, char* argv[])
 	CLAP_CARG(iters,   int,     1,            "CA iterations before entropy calculation");
 	CLAP_CARG(samps,   size_t,  100,          "sample size");
 	puts("---------------------------------------------------------------------------------------\n");
+
+	if (info) return EXIT_SUCCESS; // display switches and return
 
 	sm_create(sm);
 

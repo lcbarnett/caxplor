@@ -16,7 +16,7 @@ void print_id(const rtl_t* const rule, const int filtering);
 
 // Main "CA Explorer" simulation
 
-int sim_xplor(int argc, char* argv[])
+int sim_xplor(int argc, char* argv[], int info)
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -55,6 +55,8 @@ int sim_xplor(int argc, char* argv[])
 	CLAP_CARG(imfmt,   cstr,   "png",         "image format (png, bmp, gif, jpg/jpeg)");
 #endif
 	puts("---------------------------------------------------------------------------------------\n");
+
+	if (info) return EXIT_SUCCESS; // display switches and return
 
 	// get number of CA rows/cols/words to fit screen
 
