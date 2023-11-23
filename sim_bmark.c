@@ -4,7 +4,7 @@
 #include "rtab.h"
 #include "clap.h"
 
-int sim_bmark(int argc, char* argv[])
+int sim_bmark(int argc, char* argv[], int info)
 {
 	// CLAP (command-line argument parser). Default values
 	// may be overriden on the command line as switches.
@@ -19,6 +19,8 @@ int sim_bmark(int argc, char* argv[])
 	CLAP_CARG(maxrot,  int,     100,          "maximum rotation");
 	CLAP_CARG(seed,    ulong,   0,            "random seed (0 for unpredictable)");
 	puts("---------------------------------------------------------------------------------------\n");
+
+	if (info) return EXIT_SUCCESS; // display switches and return
 
 	double ts,te;
 

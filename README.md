@@ -19,7 +19,7 @@ Simulation parameters may be set using command-line switches; e.g.,
 ```
 ./caxplor -rsiz 7 -fsiz 3 -rlam 0.3
 ```
-will run CAs of size 7, filters of size 3 and an average Langton's &lambda; = 0.3. To see the available switches, just run `./caxplor xplor` without switches.
+will run CAs of size 7, filters of size 3 and an average Langton's &lambda; = 0.3. To see the available switches and their values, just run, e.g., `./caxplor xplor -i <other switches>`.
 
 Saved CA rules (and their filter rules, if present) may also be loaded from a file:
 ```
