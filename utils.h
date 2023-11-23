@@ -6,6 +6,33 @@
 #include <math.h>
 #include <float.h>
 #include <time.h>
+#include <sys/time.h>
+
+/*********************************************************************/
+/*                      Useful macros                                */
+/*********************************************************************/
+
+// bomb out gracefully with diagnostics
+
+#define ERRPT fprintf(stderr,"ERROR in '%s' [%s:%d]: ",__FUNCTION__,__FILE__,__LINE__)
+
+#define EEXIT(...)  {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); exit(EXIT_FAILURE);}
+#define PEEXIT(...) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}
+
+#define ASSERT(cond,...)  {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); exit(EXIT_FAILURE);}}
+#define PASSERT(cond,...) {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}}
+
+// memory checks
+
+#ifdef __linux__
+#define TEST_RAM(bytes) ASSERT((bytes) < get_free_ram(),"Unfeasible memory request!") // unreliable, but better than nowt
+#define TEST_ALLOC(ptr) // On Linux there's no point testing pointer for NULL after m/calloc :-/
+#else
+#define TEST_RAM(bytes) // not sure how to do this on other systems
+#define TEST_ALLOC(ptr) PASSERT((ptr) != NULL,"Memory allocation failed!")
+#endif
+
+/*********************************************************************/
 
 // entropy stuff
 
@@ -48,6 +75,7 @@ void hist(const size_t n, const double* const x, const size_t m, ulong* const  b
 static inline float* double2float_alloc(const size_t n, const double* const x)
 {
 	float* const xf = malloc(n*sizeof(float)); // !!! remember to free !!!
+	TEST_ALLOC(xf);
 	float* pf = xf;
 	for (const double* p=x;p<x+n;++p,++pf) *pf = (float)*p;
 	return xf;
@@ -150,10 +178,10 @@ static inline void sqmagf(const size_t n, float* const a, const float* const x, 
 	for (size_t i=0;i<n;++i) a[i] = x[i]*x[i]+y[i]*y[i];
 }
 
-static inline double timer()
-{
-	return (double)clock()/(double)CLOCKS_PER_SEC;
-}
+ulong  get_free_ram();
+double get_wall_time();
+double get_cpu_time();
+double timer();
 
 // statistics
 
@@ -178,19 +206,5 @@ void  gp_setterm(FILE* const gp, const char* const gpterm, const char* const gpt
 void  gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace);
 
 extern const char* gp_palette[];
-
-/*********************************************************************/
-/*                      Useful macros                                */
-/*********************************************************************/
-
-// bomb out gracefully with diagnostics
-
-#define ERRPT fprintf(stderr,"ERROR in '%s' [%s:%d]: ",__FUNCTION__,__FILE__,__LINE__)
-
-#define EEXIT(...)  {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); exit(EXIT_FAILURE);}
-#define PEEXIT(...) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}
-
-#define ASSERT(cond,...)  {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); exit(EXIT_FAILURE);}}
-#define PASSERT(cond,...) {if (!(cond)) {ERRPT; fprintf(stderr,__VA_ARGS__); fputc('\n',stderr); perror(NULL); exit(EXIT_FAILURE);}}
 
 #endif // CAUTILS

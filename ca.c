@@ -100,7 +100,9 @@ void ca_dps(const size_t I, const size_t n, const word_t* const ca, double* cons
 	const size_t m = n*WBITS;
 	const size_t q = m/2+1; // fine, because WBITS even!
 	double* const dftre = calloc(q,sizeof(double));
+	TEST_ALLOC(dftre);
 	double* const dftim = calloc(q,sizeof(double));
+	TEST_ALLOC(dftim);
 	for (size_t row=0; row<I; ++row) {
 		const word_t* const car = ca+n*row;
 		double* const dpsr = dps+q*row;

@@ -44,8 +44,11 @@ int sim_bmark(int argc, char* argv[])
 	word_t* const fas = mw_alloc(T);
 
 	word_t** ca = malloc(S*sizeof(word_t*));
+	TEST_ALLOC(ca);
 	word_t** ua = malloc(S*sizeof(word_t*));
+	TEST_ALLOC(ua);
 	word_t** fa = malloc(S*sizeof(word_t*));
+	TEST_ALLOC(fa);
 
 	for (size_t k=0; k<S; ++k) ca[k] = cas+k*n;
 	for (size_t k=0; k<S; ++k) ua[k] = uas+k*n;
@@ -54,6 +57,7 @@ int sim_bmark(int argc, char* argv[])
 	// rotations
 
 	int* b = malloc(S*sizeof(int));
+	TEST_ALLOC(b);
 	for (int* p=b; p<b+S; ++p) *p = RANDI(int,maxrot,&rng);
 
 	// intialise CA

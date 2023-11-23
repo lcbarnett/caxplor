@@ -1,9 +1,6 @@
 #ifndef RTAB_H
 #define RTAB_H
 
-#include <gd.h>
-#include <X11/Xlib.h>
-
 #include "word.h"
 
 /*********************************************************************/
@@ -18,11 +15,13 @@ typedef struct rtl_node {
 	struct rtl_node* filt; // pointer to filter list
 } rtl_t;
 
-rtl_t*  rtl_add   (rtl_t* curr, const int size); // insert after
-rtl_t*  rtl_del   (rtl_t* curr);
-void    rtl_free  (rtl_t* curr);
-rtl_t*  rtl_find  (const rtl_t* rule, const int size, const word_t* const tab);
-rtl_t*  rtl_fread (FILE* rtfs);
+rtl_t*  rtl_add    (rtl_t* curr, const int size); // insert after
+rtl_t*  rtl_del    (rtl_t* curr);
+void    rtl_free   (rtl_t* curr);
+rtl_t*  rtl_find   (const rtl_t* const rule, const int size, const word_t* const tab);
+rtl_t*  rtl_init   (rtl_t* rule);
+int*    rtl_nitems (const rtl_t* const rule, int* const nrules, int* const nfilts);
+rtl_t*  rtl_fread  (FILE* rtfs);
 
 /*********************************************************************/
 /*                      rule table                                   */
@@ -88,12 +87,28 @@ void    rt_to_mwords   (const int size, const word_t* const tab, const size_t nr
 void    rt_fprint      (const int size, const word_t* const tab, FILE* const fstream);
 void    rt_fprint_id   (const int size, const word_t* const tab, FILE* const fstream);
 void    rt_print       (const int size, const word_t* const tab);
-char*   rt_sprint_id   (const int size, const word_t* const tab); // allocates C string; remember to free!
+size_t  rt_sprint_id   (const int size, const word_t* const tab, size_t sbuflen, char* const str);
 void    rt_print_id    (const int size, const word_t* const tab);
-void    rt_entro_hist  (const int size, const word_t* const tab,  const int m, const int iff, ulong* const bin);
-double  rt_entro       (const int size, const word_t* const tab,  const int m, const int iff);
-void    rt_trent1_hist (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2);
-double  rt_trent1      (const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag);
+
+double rt_entro( // Entropy for CA rule on sequence of length m after iff iterations
+	const int           size,
+	const word_t* const tab,
+	const int           m,
+	const int           iff,
+	uint64_t*     const bin
+);
+
+double rt_dd( // dynamical dependence for CA/filter rules on sequence of length m after iff iterations, with lag ilag
+	const int           rsiz,
+	const word_t* const rtab,
+	const int           fsiz,
+	const word_t* const ftab,
+	const int           m,
+	const int           iff,
+	const int           ilag,
+	uint64_t*     const bin,
+	uint64_t*     const bin2
+);
 
 static const char hexchar[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 

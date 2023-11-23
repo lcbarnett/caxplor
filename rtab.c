@@ -9,7 +9,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 {
 	if (curr == NULL) { // empty list
 		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
+		TEST_ALLOC(curr);
 		curr->next = NULL;
 		curr->prev = NULL;
 	}
@@ -17,6 +17,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 		while (curr->next != NULL) curr = curr->next; // go to end of list
 		rtl_t* const oldcurr = curr;
 		curr = malloc(sizeof(rtl_t));
+		TEST_ALLOC(curr);
 		curr->prev = oldcurr;
 		curr->next = NULL;
 		oldcurr->next = curr;
@@ -26,31 +27,7 @@ rtl_t* rtl_add(rtl_t* curr, const int size) // insert at end
 	curr->tab = rt_alloc(size);
 	return curr;
 }
-/*
-rtl_t* rtl_add(rtl_t* curr, const int size) // insert after
-{
-	if (curr == NULL) { // empty list
-		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
-		curr->next = NULL;
-		curr->prev = NULL;
-	}
-	else {
-		rtl_t* const newprev = curr;
-		rtl_t* const newnext = curr->next;
-		curr = malloc(sizeof(rtl_t));
-		PASSERT(curr != NULL,"memory allocation failed");
-		curr->next = newnext;
-		curr->prev = newprev;
-		newprev->next = curr;
-		if (newnext != NULL) newnext->prev = curr; // not at end of list
-	}
-	curr->filt = NULL;
-	curr->size = size;
-	curr->tab = rt_alloc(size);
-	return curr;
-}
-*/
+
 rtl_t* rtl_del(rtl_t* curr)
 {
 	if (curr == NULL) return NULL; // nothing to delete
@@ -84,46 +61,76 @@ void rtl_free(rtl_t* curr)
 	while (curr != NULL) curr = rtl_del(curr);
 }
 
-rtl_t* rtl_find(const rtl_t* rule, const int size, const word_t* const tab)
+rtl_t* rtl_find(const rtl_t* const rule, const int size, const word_t* const tab)
 {
 	if (rule == NULL) return NULL;
+	const rtl_t* r = rule;
 	const size_t S = POW2(size);
-	while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
-	while (rule != NULL) {
-		if (size == rule->size) {
-			if (mw_equal(S,tab,rule->tab)) return (rtl_t*)rule;
+	while (r->prev != NULL) r = r->prev; // go to beginning of list
+	while (r != NULL) {
+		if (size == r->size) {
+			if (mw_equal(S,tab,r->tab)) return (rtl_t*)r;
 		}
-		rule = rule->next;
+		r = r->next;
 	}
 	return NULL;
+}
+
+rtl_t* rtl_init(rtl_t* rule)
+{
+	if (rule == NULL) return NULL;
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of rule list
+	for (; rule->next != NULL; rule = rule->next) {
+		if (rule->filt != NULL) { // have a filter list
+			while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // go to beginning of filter list
+		}
+	}
+	while (rule->prev != NULL) rule = rule->prev; // go to beginning of rule list again
+	return rule;
+}
+
+int* rtl_nitems(const rtl_t* const rule, int* const nrules, int* const nfilts)
+{
+	// should call rtl_init(rule) first !!!
+	*nrules = 0;
+	if (rule == NULL) return NULL;
+	for (const rtl_t* r = rule; r != NULL; r = r->next) ++(*nrules);
+	int* const nfperr = calloc((size_t)*nrules,sizeof(int)); // zero-initialises
+	TEST_ALLOC(nfperr);
+	int* nfpr = nfperr;
+	*nfilts = 0;
+	for (const rtl_t* r = rule; r != NULL; r = r->next,++nfpr) {
+		for (const rtl_t* f = r->filt; f != NULL; f = f->next)  {++(*nfpr); ++(*nfilts);}
+	}
+	return nfperr;
 }
 
 rtl_t* rtl_fread(FILE* rtfs)
 {
 	// A .rt (rtids) file should have lines of the form:
 	//
-	//     CA-size CA-rtid filter-size filter-rtid
+	//     CA-rtid {filter-rtid}
 	//
-	// Whitespace in lines is ignored, and lines beginning
-	// with '#' are taken as comments and ignored.
+	// where {...} indicates optional. Blank lines and
+	// whitespace in lines are ignored, and lines beginning
+	// with # are taken as comments and ignored.
 
-	rtl_t* rule  = NULL;
-	char* line = NULL;
-	size_t len = 0;
-	int nlines = 0;
+	rtl_t*  rule   = NULL;
+	char*   line   = NULL;
+	size_t  len    = 0;
+	int     nlines = 0;
 	ssize_t ilen;
-	char delimit[]=" \t\r\n\v\f"; // POSIX whitespace characters
+	char    delimit[]=" \t\r\n\v\f"; // POSIX whitespace characters
 
 	// read lines
 	while ((ilen = getline(&line,&len,rtfs)) != -1) {
 
 		++nlines;
 		printf("%3d :",nlines);
-		fflush(stdout);
 
 		if (ilen > 0) line[ilen-1] = '\0'; // strip trailing newline
 
-		const char* token = strtok(line,delimit);
+		const char* token = strtok(line,delimit); // first string: a rule id
 		if (token == NULL) {
 			printf(" empty line\n");
 			continue;
@@ -134,7 +141,6 @@ rtl_t* rtl_fread(FILE* rtfs)
 		}
 
 		printf(" CA id = %s",token);
-		fflush(stdout);
 		int rsiz;
 		word_t* const rtab = rt_sread_id(token,&rsiz);
 		if (rsiz == -1) {
@@ -145,28 +151,24 @@ rtl_t* rtl_fread(FILE* rtfs)
 			printf(" - ERROR: id contains non-hex characters - skipped\n");
 			continue;
 		}
-		rtl_t* rrule = rtl_find(rule,rsiz,rtab);
+		rtl_t* const rrule = rtl_find(rule,rsiz,rtab); // rule already read?
 		if (rrule == NULL) {
-			rule = rtl_add(rule,rsiz);
 			printf(" (new)");
-			fflush(stdout);
+			rule = rtl_add(rule,rsiz);
 			rt_copy(rsiz,rule->tab,rtab);
 		}
 		else {
-			rule = rrule;
-			fflush(stdout);
 			printf(" (old)");
 		}
 		free(rtab);
 
-		token = strtok(NULL,delimit);
+		token = strtok(NULL,delimit); // second string: a filter id
 		if (token == NULL) { // no filter id
-			printf(" : no filter id\n");
+			putchar('\n');
 			continue;
 		}
 
 		printf(", filter id = %s",token);
-		fflush(stdout);
 		int fsiz;
 		word_t* const ftab = rt_sread_id(token,&fsiz);
 		if (fsiz == -1) {
@@ -177,18 +179,15 @@ rtl_t* rtl_fread(FILE* rtfs)
 			printf(" - ERROR: id contains non-hex characters - skipped\n");
 			continue;
 		}
-		rtl_t* frule = rtl_find(rule->filt,fsiz,ftab);
+		rtl_t* const frule = rtl_find(rule->filt,fsiz,ftab); // rule filter already read?
 		if (frule == NULL) {
-			rule->filt = rtl_add(rule->filt,fsiz);
 			printf(" (new)");
-			fflush(stdout);
+			rule->filt = rtl_add(rule->filt,fsiz);
 			rt_copy(fsiz,rule->filt->tab,ftab);
 		}
 		else {
 			printf(" (old)");
-			fflush(stdout);
 		}
-		if (rule->filt != NULL) while (rule->filt->prev != NULL) rule->filt = rule->filt->prev; // rewind to beginning of filter list
 		free(ftab);
 
 		token = strtok(NULL,delimit);
@@ -199,10 +198,11 @@ rtl_t* rtl_fread(FILE* rtfs)
 
 		putchar('\n');
     }
+	fflush(stdout);
 
 	free(line);
 
-	if (rule != NULL) while (rule->prev != NULL) rule = rule->prev; // go to beginning of list
+	rule = rtl_init(rule); // initialise rtl
 
 	return rule;
 }
@@ -215,7 +215,7 @@ word_t* rt_alloc(const int size)
 {
 	ASSERT(size<WBITS,"rule too wide");
 	word_t* const tab = calloc(POW2(size),sizeof(word_t)); // note: zero initialises (this is fine)
-	PASSERT(tab != NULL,"memory allocation failed");
+	TEST_ALLOC(tab);
 	return tab;
 }
 
@@ -316,14 +316,16 @@ void rt_print_id(const int size, const word_t* const tab)
 	rt_fprint_id(size,tab,stdout);
 }
 
-char* rt_sprint_id(const int size, const word_t* const tab) // allocates C string; remember to free!
+size_t rt_sprint_id(const int size, const word_t* const tab, size_t sbuflen, char* const str)
 {
+	// Note: *concatenates* rtid to string; string buffer must be long enough to accommodate it!
 	const size_t S = POW2(size);
 	const size_t C = rt_hexchars(size);
-	char* const str = malloc((C+1)*sizeof(char));
+	const size_t slen = strlen(str);
+	ASSERT(slen+C < sbuflen,"string buffer too short!"); // note extra char for NUL terminator
 	word_t u = 0;
 	int i = 0;
-	size_t c = 0;
+	size_t c = slen;
 	for (size_t r=0;r<S;++r) {
 		PUTBIT(u,i,tab[r]);
 		if ((++i)%4 == 0) {
@@ -332,8 +334,8 @@ char* rt_sprint_id(const int size, const word_t* const tab) // allocates C strin
 			i = 0;
 		}
 	}
-	str[c] = '\0'; // null terminator
-	return str;
+	str[c] = '\0'; // null terminate
+	return C; // number of chars written not including NUL terminator
 }
 
 word_t* rt_fread_id(FILE* const fstream, int* const size)  // allocates rule table on sucess - remember to free!
@@ -373,41 +375,52 @@ word_t* rt_sread_id(const char* const str, int* const size) // allocates rule ta
 	return tab; // success
 }
 
-void rt_entro_hist(const int size, const word_t* const tab, const int m, const int iff, ulong* const bin)
-{
-	// Entropy histogram for CA rule on sequence of length m after iter iterations
+double rt_entro( // Entropy for CA rule on sequence of length m after iff iterations
 
-	const size_t S = (size_t)POW2(m);
+	const int           size,
+	const word_t* const tab,
+	const int           m,
+	const int           iff,
+	uint64_t*     const bin
+)
+{
+	// Construct histogram
+
+	const size_t S = POW2(m);
+	for (size_t y=0; y<S; ++y) bin[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
 		word_t y = x;
 		for (int i=0; i<iff; ++i) y = wd_filter(m,y,size,tab); // advance CA (at least 1)
 		++bin[y];
 	}
-}
 
-double rt_entro(const int size, const word_t* const tab, const int m, const int iff)
-{
-	// Entropy for CA rule on sequence of length m after iter iterations
+	// Calculate entropy
 
-	const   size_t S   = (size_t)POW2(m);
-	ulong*  const  bin = calloc(S,sizeof(ulong)); // zero-initialises
-	PASSERT(bin != NULL,"memory allocation failed");
-	rt_entro_hist(size,tab,m,iff,bin);
-	double* const  p = malloc(S*sizeof(double));
-	PASSERT(p != NULL,"memory allocation failed");
-	const   double f = 1.0/(double)S;
+	const double f = 1.0/(double)S;
+	double* const p = (double* const)bin; // alias histogram as double array (!)
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
-	free(p);
-	free(bin);
 	return H;
 }
 
-void rt_trent1_hist(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag, ulong* const bin, ulong* const bin2)
+double rt_dd( // dynamical dependence for CA/filter rules on sequence of length m after iff iterations, with lag ilag
+	const int           rsiz,
+	const word_t* const rtab,
+	const int           fsiz,
+	const word_t* const ftab,
+	const int           m,
+	const int           iff,
+	const int           ilag,
+	uint64_t*     const bin,
+	uint64_t*     const bin2
+)
 {
-	// 1-lag transfer entropy histograms for CA rule and filter rule on sequence of length m after iter iterations
+	// Construct histograms
 
-	const size_t S = (size_t)POW2(m);
+	const size_t S  = POW2(m);
+	const size_t S2 = POW2(2*m);
+	for (size_t y=0; y<S;  ++y) bin[y]  = 0;
+	for (size_t y=0; y<S2; ++y) bin2[y] = 0;
 	for (word_t x=WZERO; x<S; ++x) {
 		word_t y = x;
 		for (int i=0; i<iff; ++i) y = wd_filter(m,y,rsiz,rtab);  // advance CA (may be zero)
@@ -417,31 +430,15 @@ void rt_trent1_hist(const int rsiz, const word_t* const rtab, const int fsiz, co
 		const word_t v = wd_filter(m,y,fsiz,ftab);               // filter CA
 		++bin2[u+S*v];
 	}
-}
 
-double rt_trent1(const int rsiz, const word_t* const rtab, const int fsiz, const word_t* const ftab, const int m, const int iff, const int ilag)
-{
-	// 1-lag transfer entropy for CA rule and filter rule on sequence of length m after iter iterations
+	// Calculate entropies
 
-	const   size_t S    = (size_t)POW2(m);
-	ulong*  const  bin  = calloc(S,sizeof(ulong)); // zero-initialises
-	PASSERT(bin != NULL,"memory allocation failed");
-	const   size_t S2   = (size_t)POW2(2*m);
-	ulong*  const  bin2 = calloc(S2,sizeof(ulong)); // zero-initialises
-	PASSERT(bin2 != NULL,"memory allocation failed");
-	rt_trent1_hist(rsiz,rtab,fsiz,ftab,m,iff,ilag,bin,bin2);
-	double* const  p = malloc(S*sizeof(double));
-	PASSERT(p != NULL,"memory allocation failed");
-	const   double f = 1.0/(double)S;
+	const double f = 1.0/(double)S;
+	double* const p = (double* const)bin; // alias histogram as double array (!)
 	for (size_t y=0; y<S; ++y) p[y] = f*(double)bin[y];
 	const double H = entro2(S,p);
-	double* const  p2 = malloc(S2*sizeof(double));
-	PASSERT(p2 != NULL,"memory allocation failed");
+	double* const p2 = (double* const)bin2; // alias histogram as double array (!)
 	for (size_t y2=0; y2<S2; ++y2) p2[y2] = f*(double)bin2[y2];
 	const double H2 = entro2(S2,p2);
-	free(p2);
-	free(p);
-	free(bin2);
-	free(bin);
 	return H2-H;
 }

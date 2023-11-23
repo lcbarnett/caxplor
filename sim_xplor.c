@@ -1,10 +1,7 @@
-#ifndef HAVE_X11
-	#error "You shouldn't be trying to compile this if you have specified X11"
-#endif
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#include "clap.h"
 #include "screen_metrics.h"
 #include "ca.h"
 #ifdef HAVE_GD
@@ -12,7 +9,6 @@
 #endif
 #include "caX11.h"
 #include "rtab.h"
-#include "clap.h"
 #include "strman.h"
 #include "analyse.h"
 
@@ -113,6 +109,7 @@ int sim_xplor(int argc, char* argv[])
 
 	// the image data
 	char* const imdata = im->data = malloc((uint)(im->bytes_per_line*imy));
+	TEST_ALLOC(imdata);
 	XInitImage(im);
 
 	// control variables
@@ -136,8 +133,8 @@ int sim_xplor(int argc, char* argv[])
 		"Keys:\n"
 		"-----\n\n"
 		"h : display this help\n"
-		"m : toggle CA/filter mode\n"
-		"n : new random CA/filter\n"
+		"m : (or ESC) toggle CA/filter mode\n"
+		"n : (or SPACE) new random CA/filter\n"
 		"N : new CA/filter from user-supplied id\n"
 		"d : (or DEL) delete CA/filter\n"
 		"j : (or left-arrow) previous CA/filter\n"
@@ -148,8 +145,8 @@ int sim_xplor(int argc, char* argv[])
 		"v : invert CA/filter\n"
 		"f : forward CA one screen\n"
 		"i : re-initialise CA\n"
-		"e : plot entropy of CA rule\n"
-		"t : plot 1-lag DD of CA rule and filter rule\n"
+		"E : calculate entropy of CA rule\n"
+		"D : calculate dynamical dependence of CA/filter rules\n"
 		"p : calculate CA period\n"
 		"s : save CA/filter id to file\n"
 #ifdef HAVE_GD
@@ -157,7 +154,7 @@ int sim_xplor(int argc, char* argv[])
 #endif
 		"S : calculate CA spatial discrete power spectrum\n"
 		"I : calculate CA spatial auto-MI\n"
-		"q : (or ESC) exit program\n";
+		"q : exit program\n";
 	printf("%s\n",usagestr);
 	fflush(stdout);
 
@@ -189,6 +186,11 @@ int sim_xplor(int argc, char* argv[])
 	FILE* const ortfs = fopen(ortfile,"a");
 	if (ortfs == NULL) PEEXIT("failed to open saved rtids file '%s'",ortfile);
 
+	const int hlen = (emmax > tmmax ? emmax : tmmax)+1;
+	double H [hlen];
+	double Hf[hlen];
+	double Tf[hlen];
+
 	// window event loop
 	while (1) {
 
@@ -211,7 +213,9 @@ int sim_xplor(int argc, char* argv[])
 		char key;
 		KeySym keysym;
 		int kret = XLookupString(&event.xkey,&key,1,&keysym,NULL);
-		if (key == 27) key = 'q'; // map ESC to 'q' for quit
+//		if (key == 27) key = 'q'; // map ESC   to 'q' for quit
+		if (key == 27) key = 'm'; // map ESC   to 'm' for toggle mode
+		if (key == 32) key = 'n'; // map SPACE to 'n' for new
 		switch (keysym) {
 			case 65361: key = 'j'; kret = 1; break; // map left-arrow  to 'j' for prev
 			case 65363: key = 'k'; kret = 1; break; // map right-arrow to 'k' for next
@@ -593,12 +597,58 @@ int sim_xplor(int argc, char* argv[])
 			caana_period(n,I,ca,rule,prff,pmax);
 			break;
 
-		case 'e': // calculate CA/filter entropy
+		case 'E': // calculate entropy of CA rule
 
-			caana_entro(rule,filtering,emmax,eiff,gpdir);
+			printf("calculating CA/filter entropy");
+			const size_t Se = POW2(emmax);
+			TEST_RAM(Se*sizeof(uint64_t));
+			uint64_t* const bine = malloc(Se*sizeof(uint64_t));
+			TEST_ALLOC(bine);
+			for (int m=0; m<hlen; ++m) H[m] = NAN;
+			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bine)/(double)m;
+			if (filtering && rule->filt != NULL) {
+				for (int m=0; m<hlen; ++m) Hf[m] = NAN;
+				for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff,bine)/(double)m;
+			}
+			free(bine);
+			char gpename[] = "caentro";
+			FILE* const gped = gp_dopen(gpename,gpdir);
+			if (filtering && rule->filt != NULL) {
+				printf(" rule entropy = %8.6f, filter entropy = %8.6f\n",H[emmax],Hf[emmax]);
+				for (int m=0; m<hlen; ++m) fprintf(gped,"%d\t%g\t%g\n",m,H[m],Hf[m]);
+			}
+			else {
+				printf(" rule entropy = %8.6f\n",H[emmax]);
+				for (int m=0; m<hlen; ++m) fprintf(gped,"%d\t%g\n",m,H[m]);
+			}
+			if (fclose(gped) == -1) PEEXIT("failed to close Gnuplot data file\n");
+			FILE* const gpec = gp_fopen(gpename,gpdir,NULL,"CA rule entropy",0,0);
+			fprintf(gpec,"datfile = \"%s.dat\"\n",gpename);
+			fprintf(gpec,"set title \"{/:Bold CA entropy}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gpec); fprintf(gpec," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
+			if (rule->filt != NULL) {
+				fprintf(gpec,", filter "); rt_fprint_id(rule->filt->size,rule->filt->tab,gpec); fprintf(gpec," ({/Symbol l} = %g)\"\n",rt_lambda(rule->filt->size,rule->filt->tab));
+			}
+			else {
+				fprintf(gpec,"\"\n");
+			}
+			fprintf(gpec,"set xlabel \"CA length (bits)\"\n");
+			fprintf(gpec,"set ylabel \"normalised entropy\"\n");
+			fprintf(gpec,"set key right bottom Left rev\n");
+			fprintf(gpec,"set grid\n");
+			fprintf(gpec,"set xr [1:%d]\n",emmax);
+			fprintf(gpec,"set yr [0:1]\n");
+			fprintf(gpec,"set ytics 0.1\n");
+			if (filtering && rule->filt != NULL) {
+				fprintf(gpec,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy'\n");
+			}
+			else {
+				fprintf(gpec,"plot datfile u 1:2 w lines t 'rule entropy'\n");
+			}
+			if (fclose(gpec) == -1) PEEXIT("failed to close Gnuplot command file\n");
+			gp_fplot(gpename,gpdir);
 			break;
 
-		case 't': // calculate CA/filter 1-lag DD
+		case 'D': // calculate dynamical dependence of CA/filter rules
 
 			if (!filtering) {
 				printf("not in filtering mode!\n");
@@ -608,7 +658,43 @@ int sim_xplor(int argc, char* argv[])
 				printf("no filter!\n");
 				break;
 			}
-			caana_dd(rule,filtering,emmax,eiff,tmmax,tiff,tlag,gpdir);
+			printf("calculating CA/filter dynamical dependence");
+			const size_t St = POW2(emmax);
+			TEST_RAM(St*sizeof(uint64_t));
+			uint64_t* const bint = malloc(St*sizeof(uint64_t));
+			TEST_ALLOC(bint);
+			const size_t S2t = POW2(2*tmmax);
+			TEST_RAM(S2t*sizeof(uint64_t));
+			uint64_t* const bin2t = malloc(S2t*sizeof(uint64_t));
+			TEST_ALLOC(bin2t);
+			for (int m=0; m<hlen; ++m) H[m] = NAN;
+			for (int m=rule->size; m<=emmax; ++m) H[m] = rt_entro(rule->size,rule->tab,m,eiff,bint)/(double)m;
+			for (int m=0; m<hlen; ++m) Hf[m] = NAN;
+			for (int m=rule->filt->size; m<=emmax; ++m) Hf[m] = rt_entro(rule->filt->size,rule->filt->tab,m,eiff,bint)/(double)m;
+			const int mmin = rule->size > rule->filt->size ? rule->size : rule->filt->size;
+			for (int m=0; m<hlen; ++m) Tf[m] = NAN;
+			for (int m=mmin; m<=tmmax; ++m) Tf[m] = rt_dd(rule->size,rule->tab,rule->filt->size,rule->filt->tab,m,tiff,tlag,bint,bin2t)/(double)m;
+			free(bin2t);
+			free(bint);
+			printf(" rule entropy = %8.6f, filter entropy = %8.6f, DD = %8.6f\n",H[emmax],Hf[emmax],Tf[tmmax]);
+			char gptname[] = "cadd";
+			FILE* const gptd = gp_dopen(gptname,gpdir);
+			for (int m=0; m<hlen; ++m) fprintf(gptd,"%d\t%g\t%g\t%g\n",m,H[m],Hf[m],Tf[m]);
+			if (fclose(gptd) == -1) PEEXIT("failed to close Gnuplot data file\n");
+			FILE* const gptc = gp_fopen(gptname,gpdir,NULL,"CA rule 1-lag Dynamical Dependence",0,0);
+			fprintf(gptc,"datfile = \"%s.dat\"\n",gptname);
+			fprintf(gptc,"set title \"{/:Bold CA dynamical dependence}\\n\\nrule "); rt_fprint_id(rule->size,rule->tab,gptc); fprintf(gptc," ({/Symbol l} = %g)",rt_lambda(rule->size,rule->tab));
+			fprintf(gptc,", filter "); rt_fprint_id(rule->filt->size,rule->filt->tab,gptc); fprintf(gptc," ({/Symbol l} = %g)\"\n",rt_lambda(rule->filt->size,rule->filt->tab));
+			fprintf(gptc,"set xlabel \"CA length (bits)\"\n");
+			fprintf(gptc,"set ylabel \"normalised entropy\"\n");
+			fprintf(gptc,"set key right bottom Left rev\n");
+			fprintf(gptc,"set grid\n");
+			fprintf(gptc,"set xr [1:%d]\n",emmax);
+			fprintf(gptc,"set yr [0:1]\n");
+			fprintf(gptc,"set ytics 0.1\n");
+			fprintf(gptc,"plot datfile u 1:2 w lines t 'rule entropy', datfile u 1:3 w lines t 'filter entropy', datfile u 1:4 w lines t 'rule/filter DD'\n");
+			if (fclose(gptc) == -1) PEEXIT("failed to close Gnuplot command file\n");
+			gp_fplot(gptname,gpdir);
 			break;
 
 		case 'S': // calculate CA spatial discrete power spectrum

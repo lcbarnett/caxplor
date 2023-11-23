@@ -1,10 +1,68 @@
 #include <string.h>
 
+#ifdef __linux__
+	#include <sys/sysinfo.h>
+#endif
+
+#ifdef _WIN32
+	#include <Windows.h>
+#endif
+
+#ifdef __APPLE__
+	#include "TargetConditionals.h"
+    #if TARGET_IPHONE_SIMULATOR || TARGET_OS_MACCATALYST || TARGET_OS_IPHONE
+        // nada
+    #elif TARGET_OS_MAC
+        #define _OSX
+    #else
+		#error "Unknown Apple platform"
+    #endif
+#endif
+
 #include "utils.h"
 
 #define GPDEFTITLE "CA Xplorer"
 #define GPCMD "gnuplot -p"
 #define SMAXLEN 200
+
+#ifdef __linux__
+ulong get_free_ram()
+{
+	struct sysinfo info;
+	PASSERT(sysinfo(&info) == 0,"sysinfo call failed");
+	return info.freeram;
+}
+#endif
+
+double get_wall_time()
+{
+#ifdef __linux__
+	struct timeval time;
+	if (gettimeofday(&time,NULL)) PEEXIT("'gettimeofday' failed");
+	return (double)time.tv_sec + 0.000001*(double)time.tv_usec;
+#endif
+
+#ifdef _WIN32
+	LARGE_INTEGER time,freq;
+	if (!QueryPerformanceFrequency(&freq)) PEEXIT("'QueryPerformanceFrequency' failed");
+	if (!QueryPerformanceCounter(&time))   PEEXIT("'QueryPerformanceCounter' failed");
+	return (double)time.QuadPart/(double)freq.QuadPart;
+#endif
+
+#ifdef _OSX
+	return NAN; // TODO
+#endif
+}
+
+double get_cpu_time()
+{
+    return (double)clock()/(double)CLOCKS_PER_SEC;
+}
+
+double timer()
+{
+	return (double)clock()/(double)CLOCKS_PER_SEC;
+}
 
 void hist(const size_t n, const double* const x, const size_t m, ulong* const  bin)
 {
@@ -28,6 +86,7 @@ double entro2(const size_t n, const double* const x)
 double* dft_cstab_alloc(const size_t n)
 {
 	double* const costab = calloc(2*n*n,sizeof(double));
+	TEST_ALLOC(costab);
 	double* const sintab = costab+n*n; // sin table is offset by n^2
 	const double fac = (double)(2.0*M_PI)/(double)n;
 	// build sin and cos tables
