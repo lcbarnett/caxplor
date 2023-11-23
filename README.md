@@ -17,13 +17,15 @@ New random CA/filter rules are added to the corresponding list with SPACE (or 'n
 
 Simulation parameters may be set using command-line switches; e.g.,
 ```
-./caxplor -rsiz 7 -fsiz 3 -rlam 0.3
+./caxplor xplor -rsiz 7 -fsiz 3 -rlam 0.3
 ```
-will run CAs of size 7, filters of size 3 and an average Langton's &lambda; = 0.3. To see the available switches and their values, just run, e.g., `./caxplor xplor -i <other switches>`.
-
+will run CAs of size 7, filters of size 3 and an average Langton's &lambda; = 0.3. To see the available switches and the values that would be used ("dry run"):
+```
+./caxplor xplor -i <other switches>
+```
 Saved CA rules (and their filter rules, if present) may also be loaded from a file:
 ```
-./caxplor -irtfile my_saved_rules.rt
+./caxplor xplor -irtfile my_saved_rules.rt
 ```
 The entropy and 1-lag [transfer entropy](https://link.springer.com/book/10.1007/978-3-319-43222-9) aka [dynamical dependence](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.108.014304) for the current CA/filter may be calculated with the 'E' and 'D' keys respectively. This (experimental and undocumented) feature requires the [Gnuplot](http://www.gnuplot.info/) scientific graphing utility to be installed on your system.
 
