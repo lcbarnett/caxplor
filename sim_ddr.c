@@ -57,12 +57,20 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	// set filter lambda parameter from job index
 
-	const char* const jobidxs = getenv(jobidx);
-	ASSERT(jobidxs != NULL,"Failed to find environmental variable \"%s\"",jobidx);
-	const size_t jnum = (size_t)atoi(jobidxs);
+	size_t jnum;
+	const char* const jobidxenv = getenv(jobidx);
+	if (jobidxenv == NULL) {
+		jnum = (size_t)atoi(jobidx);
+		printf("*** Job number (from command line) %zu : ",jnum);
+	}
+	else {
+		jnum = (size_t)atoi(jobidxenv);
+		printf("*** Job number (from environmental variable %s) %zu :",jobidx,jnum);
+	}
+	fflush(stdout);
 	ASSERT(jnum > 0 && jnum <= flamres, "Bad job index (%zu)",jnum);
 	const double flam = flammin+(double)(jnum-1)*((flammax-flammin)/((double)(flamres-1)));
-	printf("*** Job number %zu: filter lambda = %g\n\n",jnum,flam);
+	printf("filter lambda = %g\n\n",flam);
 
 	// pseudo-random number generators
 
