@@ -53,8 +53,6 @@ int sim_ddr(int argc, char* argv[], int info)
 	CLAP_CARG(jobidx,   cstr,   "LSB_JOBINDEX", "job index");
 	puts("---------------------------------------------------------------------------------------\n");
 
-	if (info) return EXIT_SUCCESS; // display switches and return
-
 	// set filter lambda parameter from job index
 
 	size_t jnum;
@@ -72,6 +70,24 @@ int sim_ddr(int argc, char* argv[], int info)
 	const double flam = flammin+(double)(jnum-1)*((flammax-flammin)/((double)(flamres-1)));
 	printf("filter lambda = %g\n\n",flam);
 
+	// buffer sizes for heap memory allocation
+
+	const size_t rlen = POW2(rsize);
+	const size_t flen = POW2(fsize);
+	const size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
+
+	const unsigned long minmem =
+		nthreads*nfpert*(rlen+flen)*sizeof(word_t) +
+		nthreads*(POW2(emmax)+POW2(2*tmmax))*sizeof(uint64_t) +
+		nthreads*nfpert*3*hlen*sizeof(double) +
+		nthreads*nfpert*sizeof(tfarg_t);
+
+	const double mmMb = (double)minmem/1000.0/1000.0;
+	const double mmGb = mmMb/1000.0;
+	printf("*** Dynamic memory > %.0fMb = %.2fGb\n\n",mmMb,mmGb);
+
+	if (info) return EXIT_SUCCESS; // display switches and return
+
 	// pseudo-random number generators
 
 	mt_t rrng, frng;
@@ -82,17 +98,14 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	printf("*** Allocating storage\n\n");
 
-	const   size_t rlen = POW2(rsize);
 	word_t* const  rbuf = malloc(nthreads*nfpert*rlen*sizeof(word_t));
 	TEST_ALLOC(rbuf);
 
-	const   size_t flen = POW2(fsize);
 	word_t* const  fbuf = malloc(nthreads*nfpert*flen*sizeof(word_t));
 	TEST_ALLOC(fbuf);
 
 	// allocate buffers for entropies and DD
 
-	const   size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
 	double* const  Hrbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
 	TEST_ALLOC(Hrbuf);
 	double* const  Hfbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
