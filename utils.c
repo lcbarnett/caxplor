@@ -25,41 +25,62 @@
 #define GPCMD "gnuplot -p"
 #define SMAXLEN 200
 
-#ifdef __linux__
 ulong get_free_ram()
 {
+#if defined __linux__
 	struct sysinfo info;
 	PASSERT(sysinfo(&info) == 0,"sysinfo call failed");
 	return info.freeram;
-}
+#elif defined _OSX || defined _WIN32
+	return 0; // TODO
+#else
+	#error Unhandled OS
 #endif
+}
 
 double get_wall_time()
 {
-#ifdef __linux__
-	struct timeval time;
-	if (gettimeofday(&time,NULL)) PEEXIT("'gettimeofday' failed");
-	return (double)time.tv_sec + 0.000001*(double)time.tv_usec;
-#endif
-
-#ifdef _WIN32
+#if defined __linux__ || defined _OSX
+	struct timespec ts;
+	PASSERT(clock_gettime(CLOCK_REALTIME,&ts) == 0,"'clock_gettime' failed");
+	return (double)ts.tv_sec + (double)ts.tv_nsec/1000000000.0;
+#elif defined _WIN32
 	LARGE_INTEGER time,freq;
 	if (!QueryPerformanceFrequency(&freq)) PEEXIT("'QueryPerformanceFrequency' failed");
 	if (!QueryPerformanceCounter(&time))   PEEXIT("'QueryPerformanceCounter' failed");
 	return (double)time.QuadPart/(double)freq.QuadPart;
-#endif
-
-#ifdef _OSX
-	return NAN; // TODO
+#else
+	#error Unhandled OS
 #endif
 }
 
-double get_cpu_time()
+double get_proc_cpu_time()
 {
-    return (double)clock()/(double)CLOCKS_PER_SEC;
+#if defined __linux__ || defined _OSX
+	struct timespec ts;
+	PASSERT(clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&ts) == 0,"'clock_gettime' failed");
+	return (double)ts.tv_sec + (double)ts.tv_nsec/1000000000.0;
+#elif defined _WIN32
+	return NAN; // TODO
+#else
+	#error Unhandled OS
+#endif
 }
 
-double timer()
+double get_thread_cpu_time()
+{
+#ifdef __linux__
+	struct timespec ts;
+	PASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID,&ts) == 0,"'clock_gettime' failed");
+	return (double)ts.tv_sec + (double)ts.tv_nsec/1000000000.0;
+#elif defined _WIN32
+	return NAN; // TODO
+#else
+	#error Unhandled OS
+#endif
+}
+
+double timer() // deprecate!
 {
 	return (double)clock()/(double)CLOCKS_PER_SEC;
 }

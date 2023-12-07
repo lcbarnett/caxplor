@@ -180,8 +180,9 @@ static inline void sqmagf(const size_t n, float* const a, const float* const x, 
 
 ulong  get_free_ram();
 double get_wall_time();
-double get_cpu_time();
-double timer();
+double get_proc_cpu_time();
+double get_thread_cpu_time();
+double timer(); // deprecate!
 
 // statistics
 
