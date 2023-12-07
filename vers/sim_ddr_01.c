@@ -5,25 +5,23 @@
 #include "rtab.h"
 
 typedef struct {
-	word_t*   rtab;
-	word_t*   ftab;
-	double*   Hr;
-	double*   Hf;
-	double*   DD;
+	word_t* rtab;
+	word_t* ftab;
+	double* Hr;
+	double* Hf;
+	double* DD;
 } tfarg_t;
 
 typedef struct {
-	size_t    tnum;
-	size_t    nfpert;
-	int       rsize;
-	int       fsize;
-	int       emmax;
-	int       eiff;
-	int       tmmax;
-	int       tiff;
-	int       tlag;
-	uint64_t* ebuf;
-	uint64_t* tbuf;
+	size_t   tnum;
+	size_t   nfpert;
+	int      rsize;
+	int      fsize;
+	int      emmax;
+	int      eiff;
+	int      tmmax;
+	int      tiff;
+	int      tlag;
 	tfarg_t* tfargs;
 } targ_t;
 
@@ -77,16 +75,12 @@ int sim_ddr(int argc, char* argv[], int info)
 	const size_t rlen = POW2(rsize);
 	const size_t flen = POW2(fsize);
 	const size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
-	const size_t eblen     = POW2(emmax);
-	const size_t tblen    = POW2(2*tmmax);
 
 	const unsigned long minmem =
 		nthreads*nfpert*(rlen+flen)*sizeof(word_t) +
+		nthreads*(POW2(emmax)+POW2(2*tmmax))*sizeof(uint64_t) +
 		nthreads*nfpert*3*hlen*sizeof(double) +
-		nthreads*nfpert*sizeof(tfarg_t) +
-		nthreads*(eblen+tblen)*sizeof(uint64_t);
-
-	TEST_RAM(minmem);
+		nthreads*nfpert*sizeof(tfarg_t);
 
 	const double mmMb = (double)minmem/1000.0/1000.0;
 	const double mmGb = mmMb/1000.0;
@@ -110,15 +104,7 @@ int sim_ddr(int argc, char* argv[], int info)
 	word_t* const  fbuf = malloc(nthreads*nfpert*flen*sizeof(word_t));
 	TEST_ALLOC(fbuf);
 
-	// allocate work buffers for entropy and DD computation
-
-	uint64_t* const ebuf = malloc(nthreads*eblen*sizeof(uint64_t));
-	TEST_ALLOC(ebuf);
-
-	uint64_t* const tbuf = malloc(nthreads*tblen*sizeof(uint64_t));
-	TEST_ALLOC(tbuf);
-
-	// allocate storage buffers for entropy and DD results
+	// allocate buffers for entropies and DD
 
 	double* const  Hrbuf = malloc(nthreads*nfpert*hlen*sizeof(double));
 	TEST_ALLOC(Hrbuf);
@@ -134,32 +120,26 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	printf("*** Setting up simulation parameters storage\n\n");
 
-	// set up thread arguments
+	// set up thread-independent parameters
 
 	targ_t targs[nthreads];
 	for (size_t i=0; i<nthreads; ++i) {
+		targs[i].rsize  = rsize;
+		targs[i].fsize  = fsize;
+		targs[i].emmax  = emmax;
+		targs[i].eiff   = eiff;
+		targs[i].tmmax  = tmmax;
+		targs[i].tiff   = tiff;
+		targs[i].tlag   = tlag;
+		targs[i].tfargs = tfbuf + i*nfpert;
+	}
+
+	// loop through rules/filters, setting up thread-dependent parameters
+
+	for (size_t i=0; i<nthreads; ++i) {
 		targ_t* const targ = &targs[i];
-
-		// thread-independent
-
-		targ->nfpert = nfpert;
-		targ->rsize  = rsize;
-		targ->fsize  = fsize;
-		targ->emmax  = emmax;
-		targ->eiff   = eiff;
-		targ->tmmax  = tmmax;
-		targ->tiff   = tiff;
-		targ->tlag   = tlag;
-
-		// thread-dependent
-
 		targ->tnum   = i;
-		targ->ebuf   = ebuf  + i*eblen;
-		targ->tbuf   = tbuf  + i*tblen;
-		targ->tfargs = tfbuf + i*nfpert;
-
-		// thread/filter-dependent
-
+		targ->nfpert = nfpert;
 		word_t* const rbufi  = rbuf  + i*nfpert*rlen;
 		word_t* const fbufi  = fbuf  + i*nfpert*flen;
 		double* const Hrbufi = Hrbuf + i*nfpert*hlen;
@@ -229,8 +209,6 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	free(tfbuf);
 	free(DDbuf);
-	free(ebuf);
-	free(tbuf);
 	free(Hfbuf);
 	free(Hrbuf);
 	free(fbuf);
@@ -257,11 +235,18 @@ void* compfun(void* arg)
 	const int tiff  = targ->tiff;
 	const int tlag  = targ->tlag;
 
-	uint64_t* const ebuf = targ->ebuf;
-	uint64_t* const tbuf = targ->tbuf;
-
 	const int hlen   = (emmax > tmmax ? emmax : tmmax)+1;
 	const int rfsize = rsize > fsize ? rsize : fsize;
+
+	const size_t S = POW2(emmax);
+	TEST_RAM(S*sizeof(uint64_t));
+	uint64_t* const bin = malloc(S*sizeof(uint64_t));
+	TEST_ALLOC(bin);
+
+	const size_t S2 = POW2(2*tmmax);
+	TEST_RAM(S2*sizeof(uint64_t));
+	uint64_t* const bin2 = malloc(S2*sizeof(uint64_t));
+	TEST_ALLOC(bin2);
 
 	for (size_t j=0; j<nfpert; ++j) {
 
@@ -276,9 +261,9 @@ void* compfun(void* arg)
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
 		for (int m=0; m<hlen; ++m) Hf[m] = NAN;
 		for (int m=0; m<hlen; ++m) DD[m] = NAN;
-		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff,ebuf)/(double)m;
-		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff,ebuf)/(double)m;
-		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_dd   (rsize,rtab,fsize,ftab,m,tiff,tlag,ebuf,tbuf)/(double)m;
+		for (int m=rsize;  m<=emmax; ++m) Hr[m] = rt_entro(rsize,rtab,m,eiff,bin)/(double)m;
+		for (int m=fsize;  m<=emmax; ++m) Hf[m] = rt_entro(fsize,ftab,m,eiff,bin)/(double)m;
+		for (int m=rfsize; m<=tmmax; ++m) DD[m] = rt_dd   (rsize,rtab,fsize,ftab,m,tiff,tlag,bin,bin2)/(double)m;
 
 		flockfile(stdout); // prevent another thread butting in!
 		printf("\tthread %2zu : filter %2zu of %2zu : rule id = ",tnum+1,j+1,nfpert);
@@ -289,6 +274,9 @@ void* compfun(void* arg)
 		fflush(stdout);
 		funlockfile(stdout);
 	}
+
+	free(bin2);
+	free(bin);
 
 	printf("thread %2zu : FINISHED\n",tnum+1);
 	fflush(stdout);
