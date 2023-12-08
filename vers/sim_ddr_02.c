@@ -5,11 +5,11 @@
 #include "rtab.h"
 
 typedef struct {
-	word_t* rtab;
-	word_t* ftab;
-	double* Hr;
-	double* Hf;
-	double* DD;
+	word_t*   rtab;
+	word_t*   ftab;
+	double*   Hr;
+	double*   Hf;
+	double*   DD;
 } tfarg_t;
 
 typedef struct {
@@ -24,7 +24,7 @@ typedef struct {
 	int       tlag;
 	uint64_t* ebuf;
 	uint64_t* tbuf;
-	tfarg_t*  tfargs;
+	tfarg_t* tfargs;
 } targ_t;
 
 static void* compfun(void* arg);
@@ -241,9 +241,6 @@ int sim_ddr(int argc, char* argv[], int info)
 
 void* compfun(void* arg)
 {
-	const double wts = get_wall_time();
-	const double cts = get_thread_cpu_time ();
-
 	const pthread_t tpid = pthread_self();
 	const targ_t* const targ = (targ_t*)arg;
 	const size_t tnum   = targ->tnum;
@@ -293,10 +290,7 @@ void* compfun(void* arg)
 		funlockfile(stdout);
 	}
 
-	const double cte = get_thread_cpu_time() - cts;
-	const double wte = get_wall_time() - wts;
-
-	printf("thread %2zu : FINISHED (cpu time = %.4f, wall time = %.4f)\n",tnum+1,cte,wte);
+	printf("thread %2zu : FINISHED\n",tnum+1);
 	fflush(stdout);
 
 	pthread_exit(NULL);

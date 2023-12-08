@@ -180,8 +180,9 @@ static inline void sqmagf(const size_t n, float* const a, const float* const x, 
 
 ulong  get_free_ram();
 double get_wall_time();
-double get_cpu_time();
-double timer();
+double get_proc_cpu_time();
+double get_thread_cpu_time();
+double timer(); // deprecate!
 
 // statistics
 
@@ -200,7 +201,6 @@ FILE* gp_popen(const char* const gpterm, const char* const gptitle, const int xs
 void  gp_pclose(FILE* const gpp);
 void  gp_fplot(const char* const gpname, const char* const gpdir);
 void  gp_setterm(FILE* const gp, const char* const gpterm, const char* const gptitle, const int xsize, const int ysize);
-
 
 // WARNING: if 'inplace' is set, x is unusable after calling (but should still be freed if allocated on heap)!
 void  gp_binary_write(FILE* const gpp, const size_t n, const double* const x, const int inplace);

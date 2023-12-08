@@ -20,11 +20,14 @@ typedef int (*sim_t)(int argc, char* argv[], int info);
 int main(int argc, char* argv[])
 {
 	const double wts = get_wall_time();
-	const double cts = get_cpu_time ();
+	const double cts = get_proc_cpu_time ();
+
+    struct tm loctime = *localtime(&(time_t){time(NULL)});
 
 	int res;
 	sim_t sim;
 	if (argc > 1) {
+		printf("\ncaxplore %s: %s",argv[1],asctime(&loctime));
 		if      (strcmp(argv[1],"ana"  )  == 0) sim = sim_ana;
 		else if (strcmp(argv[1],"bmark")  == 0) sim = sim_bmark;
 		else if (strcmp(argv[1],"test" )  == 0) sim = sim_test;
@@ -74,7 +77,7 @@ int main(int argc, char* argv[])
 		return EXIT_SUCCESS;
 	}
 
-	const double cte = get_cpu_time () - cts;
+	const double cte = get_proc_cpu_time() - cts;
 	const double wte = get_wall_time() - wts;
 
 	printf("\nCPU  time (secs) = %.4f\n",cte);
