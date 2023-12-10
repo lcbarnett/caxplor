@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include <time.h>
-#include <sys/time.h>
 
 /*********************************************************************/
 /*                      Useful macros                                */
@@ -33,6 +31,8 @@
 #endif
 
 /*********************************************************************/
+
+void report_compilation_options();
 
 // entropy stuff
 

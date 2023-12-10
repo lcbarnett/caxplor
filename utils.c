@@ -1,4 +1,35 @@
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
+
+void report_compilation_options()
+{
+	puts("\ncaxplor compile options:");
+#ifdef HAVE_PTHREADS
+	puts("\t+WITH_PTHREADS");
+#else
+	puts("\t-WITH_PTHREADS");
+#endif
+#ifdef HAVE_X11
+	puts("\t+WITH_X11");
+#else
+	puts("\t-WITH_X11");
+#endif
+#ifdef HAVE_GD
+	puts("\t+WITH_GD");
+#else
+	puts("\t-WITH_GD");
+#endif
+	puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
+#ifdef HAVE_X11
+	puts("\txplor");
+#endif
+#ifdef HAVE_PTHREADS
+	puts("\tddf");
+	puts("\tddr");
+#endif
+	putchar('\n');
+}
 
 #ifdef __linux__
 	#include <sys/sysinfo.h>

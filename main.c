@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "utils.h"
 
@@ -14,8 +15,6 @@ int sim_xplor (int argc, char* argv[], int info);
 int sim_ddf   (int argc, char* argv[], int info);
 int sim_ddr   (int argc, char* argv[], int info);
 #endif
-
-void report_compilation_options();
 
 int main(int argc, char* argv[])
 {
@@ -48,7 +47,7 @@ int main(int argc, char* argv[])
 	else if (strcmp(argv[1],"ddr"  )  == 0) sim = sim_ddr;
 #endif
 	else {
-		fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
+		fprintf(stderr,"\nUnknown simulation \"%s\"\n",argv[1]);
 		return EXIT_FAILURE;
 	}
 
@@ -72,33 +71,4 @@ int main(int argc, char* argv[])
 	printf("Wall time (secs) = %.4f\n\n",wte);
 
 	return res;
-}
-
-void report_compilation_options()
-{
-	puts("\ncaxplor compile options:");
-#ifdef HAVE_PTHREADS
-	puts("\t+WITH_PTHREADS");
-#else
-	puts("\t-WITH_PTHREADS");
-#endif
-#ifdef HAVE_X11
-	puts("\t+WITH_X11");
-#else
-	puts("\t-WITH_X11");
-#endif
-#ifdef HAVE_GD
-	puts("\t+WITH_GD");
-#else
-	puts("\t-WITH_GD");
-#endif
-	puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
-#ifdef HAVE_X11
-	puts("\txplor");
-#endif
-#ifdef HAVE_PTHREADS
-	puts("\tddf");
-	puts("\tddr");
-#endif
-	putchar('\n');
 }
