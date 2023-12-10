@@ -74,11 +74,11 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	// buffer sizes for heap memory allocation
 
-	const size_t rlen = POW2(rsize);
-	const size_t flen = POW2(fsize);
+	const size_t rlen  = POW2(rsize);
+	const size_t flen  = POW2(fsize);
 	const size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
-	const size_t eblen     = POW2(emmax);
-	const size_t tblen    = POW2(2*tmmax);
+	const size_t eblen = POW2(emmax);
+	const size_t tblen = POW2(2*tmmax);
 
 	const unsigned long minmem =
 		nthreads*nfpert*(rlen+flen)*sizeof(word_t) +
@@ -92,7 +92,7 @@ int sim_ddr(int argc, char* argv[], int info)
 	const double mmGb = mmMb/1000.0;
 	printf("*** Dynamic memory > %.0fMb = %.2fGb\n\n",mmMb,mmGb);
 
-	if (info) return EXIT_SUCCESS; // display switches and return
+	if (info) return EXIT_SUCCESS; // display some info and return
 
 	// pseudo-random number generators
 
@@ -229,10 +229,10 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	free(tfbuf);
 	free(DDbuf);
-	free(ebuf);
-	free(tbuf);
 	free(Hfbuf);
 	free(Hrbuf);
+	free(tbuf);
+	free(ebuf);
 	free(fbuf);
 	free(rbuf);
 
@@ -244,10 +244,10 @@ void* compfun(void* arg)
 	const double wts = get_wall_time();
 	const double cts = get_thread_cpu_time ();
 
-	const pthread_t tpid = pthread_self();
+	const pthread_t tpid     = pthread_self();
 	const targ_t* const targ = (targ_t*)arg;
-	const size_t tnum   = targ->tnum;
-	const size_t nfpert = targ->nfpert;
+	const size_t tnum        = targ->tnum;
+	const size_t nfpert      = targ->nfpert;
 
 	printf("thread %2zu (%zu) : %zu filters : STARTED\n",tnum+1,tpid,nfpert);
 	fflush(stdout);
