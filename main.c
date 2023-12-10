@@ -15,49 +15,28 @@ int sim_ddf   (int argc, char* argv[], int info);
 int sim_ddr   (int argc, char* argv[], int info);
 #endif
 
-typedef int (*sim_t)(int argc, char* argv[], int info);
+void report_compilation_options();
 
 int main(int argc, char* argv[])
 {
-	const double wts = get_wall_time();
-	const double cts = get_proc_cpu_time ();
+	// if no command line arguments display compilation options and available simulations and exit
 
-    struct tm loctime = *localtime(&(time_t){time(NULL)});
-
-	if (argc == 1) { // no command line arguments: display compilation options and available simulations
-		puts("\ncaxplor compile options:");
-#ifdef HAVE_PTHREADS
-		puts("\t+WITH_PTHREADS");
-#else
-		puts("\t-WITH_PTHREADS");
-#endif
-#ifdef HAVE_X11
-		puts("\t+WITH_X11");
-#else
-		puts("\t-WITH_X11");
-#endif
-#ifdef HAVE_GD
-		puts("\t+WITH_GD");
-#else
-		puts("\t-WITH_GD");
-#endif
-		puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
-#ifdef HAVE_X11
-		puts("\txplor");
-#endif
-#ifdef HAVE_PTHREADS
-		puts("\tddf");
-		puts("\tddr");
-#endif
-		putchar('\n');
+	if (argc == 1) {
+		report_compilation_options();
 		return EXIT_SUCCESS;
 	}
 
-	// so argc > 1: check simulation and run it
+	// timings
 
-	int res;
-	sim_t sim;
-	printf("\ncaxplor %s: %s",argv[1],asctime(&loctime));
+	const double wts = get_wall_time();
+	const double cts = get_proc_cpu_time ();
+
+	printf("\ncaxplor %s: %s",argv[1],asctime(localtime(&(time_t){time(NULL)})));
+
+	// find which simulation requested (note argc > 1)
+
+	int (*sim)(int argc, char* argv[], int info); // pointer to simulation function
+
 	if      (strcmp(argv[1],"ana"  )  == 0) sim = sim_ana;
 	else if (strcmp(argv[1],"bmark")  == 0) sim = sim_bmark;
 	else if (strcmp(argv[1],"test" )  == 0) sim = sim_test;
@@ -72,11 +51,19 @@ int main(int argc, char* argv[])
 		fprintf(stderr,"%s: unknown simulation \"%s\"\n",argv[0],argv[1]);
 		return EXIT_FAILURE;
 	}
-	if (argc > 2 && strcmp(argv[2],"-i") == 0) { // "dry run": display switches (and optionally other info) and exit
-		sim(argc-3,argv+3,1);
+
+	// simulation found; first switch -i specifies "dry run": display parameters (and optionally other info) and exit
+
+	if (argc > 2 && strcmp(argv[2],"-i") == 0) {
+		sim(argc-3,argv+3,1); // run with info  == 1 (true)
 		return EXIT_SUCCESS;
 	}
-	res = sim(argc-2,argv+2,0); // run the sim
+
+	// run the simulation
+
+	const int res = sim(argc-2,argv+2,0);
+
+	// report timings
 
 	const double cte = get_proc_cpu_time() - cts;
 	const double wte = get_wall_time() - wts;
@@ -85,4 +72,33 @@ int main(int argc, char* argv[])
 	printf("Wall time (secs) = %.4f\n\n",wte);
 
 	return res;
+}
+
+void report_compilation_options()
+{
+	puts("\ncaxplor compile options:");
+#ifdef HAVE_PTHREADS
+	puts("\t+WITH_PTHREADS");
+#else
+	puts("\t-WITH_PTHREADS");
+#endif
+#ifdef HAVE_X11
+	puts("\t+WITH_X11");
+#else
+	puts("\t-WITH_X11");
+#endif
+#ifdef HAVE_GD
+	puts("\t+WITH_GD");
+#else
+	puts("\t-WITH_GD");
+#endif
+	puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
+#ifdef HAVE_X11
+	puts("\txplor");
+#endif
+#ifdef HAVE_PTHREADS
+	puts("\tddf");
+	puts("\tddr");
+#endif
+	putchar('\n');
 }
