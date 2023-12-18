@@ -36,13 +36,13 @@ int sim_ddr(int argc, char* argv[], int info)
 	//
 	// Arg:   name      type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_VARG(rsize,    int,     5,             "CA rule size");
-	CLAP_VARG(rlam,     double,  0.6,           "CA rule lambda");
+	CLAP_CARG(rsize,    int,     5,             "CA rule size");
+	CLAP_CARG(rlam,     double,  0.6,           "CA rule lambda");
 	CLAP_CARG(rseed,    ulong,   0,             "CA rule random seed (or 0 for unpredictable)");
-	CLAP_VARG(fsize,    int,     5,             "filter rule size");
-	CLAP_VARG(flammin,  double,  0.6,           "filter rule lambda range minimum");
-	CLAP_VARG(flammax,  double,  0.9,           "filter rule lambda range maximum");
-	CLAP_VARG(flamres,  size_t,  10,            "filter rule lambda range resolution");
+	CLAP_CARG(fsize,    int,     5,             "filter rule size");
+	CLAP_CARG(flammin,  double,  0.6,           "filter rule lambda range minimum");
+	CLAP_CARG(flammax,  double,  0.9,           "filter rule lambda range maximum");
+	CLAP_CARG(flamres,  size_t,  10,            "filter rule lambda range resolution");
 	CLAP_CARG(fseed,    ulong,   0,             "filter rule random seed (0 for unpredictable)");
 	CLAP_CARG(emmax,    int,     20,            "maximum sequence length for entropy calculation");
 	CLAP_CARG(eiff,     int,     1,             "advance before entropy");
@@ -270,11 +270,11 @@ void* compfun(void* arg)
 
 		const tfarg_t* const tfarg = &targ->tfargs[j];
 
-		const word_t* const rtab  = tfarg->rtab;
-		const word_t* const ftab  = tfarg->ftab;
-		double*       const Hr    = tfarg->Hr;
-		double*       const Hf    = tfarg->Hf;
-		double*       const DD    = tfarg->DD;
+		const word_t* const rtab = tfarg->rtab;
+		const word_t* const ftab = tfarg->ftab;
+		double*       const Hr   = tfarg->Hr;
+		double*       const Hf   = tfarg->Hf;
+		double*       const DD   = tfarg->DD;
 
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
 		for (int m=0; m<hlen; ++m) Hf[m] = NAN;
