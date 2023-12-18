@@ -100,7 +100,7 @@ double get_proc_cpu_time()
 
 double get_thread_cpu_time()
 {
-#ifdef __linux__
+#if defined __linux__ || defined _OSX
 	struct timespec ts;
 	PASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID,&ts) == 0,"'clock_gettime' failed");
 	return (double)ts.tv_sec + (double)ts.tv_nsec/1000000000.0;
