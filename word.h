@@ -90,7 +90,7 @@ static inline word_t wd_rotr(const word_t w, const int b)
 	return (w>>b)|(w<<(WBITS-b));
 }
 
-static inline size_t wd_filter(const int n, const word_t w, const int B, const word_t* const f)
+static inline word_t wd_filter(const int n, const word_t w, const int B, const word_t* const f)
 {
 	// CAUTION: need 2*n <= WBITS, and assumes WBITS-n hi-bits of w are cleared!!!
 	const word_t BMASK = WONES>>(WBITS-B); // mask to clear bits above 1st B

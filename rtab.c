@@ -425,9 +425,9 @@ double rt_dd( // dynamical dependence for CA/filter rules on sequence of length 
 		word_t y = x;
 		for (int i=0; i<iff; ++i) y = wd_filter(m,y,rsiz,rtab);  // advance CA (may be zero)
 		const word_t u = wd_filter(m,y,fsiz,ftab);               // filter CA
-		++bin[u];
 		for (int i=0; i<ilag; ++i) y = wd_filter(m,y,rsiz,rtab); // advance CA (at least 1)
 		const word_t v = wd_filter(m,y,fsiz,ftab);               // filter CA
+		++bin[u];
 		++bin2[u+S*v];
 	}
 
