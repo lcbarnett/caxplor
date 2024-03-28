@@ -1,4 +1,35 @@
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
+
+void report_compilation_options()
+{
+	puts("\ncaxplor compile options:");
+#ifdef HAVE_PTHREADS
+	puts("\t+WITH_PTHREADS");
+#else
+	puts("\t-WITH_PTHREADS");
+#endif
+#ifdef HAVE_X11
+	puts("\t+WITH_X11");
+#else
+	puts("\t-WITH_X11");
+#endif
+#ifdef HAVE_GD
+	puts("\t+WITH_GD");
+#else
+	puts("\t-WITH_GD");
+#endif
+	puts("\ncaxplor available simulations:\n\tana\n\tbmark\n\ttest");
+#ifdef HAVE_X11
+	puts("\txplor");
+#endif
+#ifdef HAVE_PTHREADS
+	puts("\tddf");
+	puts("\tddr");
+#endif
+	putchar('\n');
+}
 
 #ifdef __linux__
 	#include <sys/sysinfo.h>
@@ -69,7 +100,7 @@ double get_proc_cpu_time()
 
 double get_thread_cpu_time()
 {
-#ifdef __linux__
+#if defined __linux__ || defined _OSX
 	struct timespec ts;
 	PASSERT(clock_gettime(CLOCK_THREAD_CPUTIME_ID,&ts) == 0,"'clock_gettime' failed");
 	return (double)ts.tv_sec + (double)ts.tv_nsec/1000000000.0;

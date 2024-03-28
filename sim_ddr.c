@@ -36,13 +36,13 @@ int sim_ddr(int argc, char* argv[], int info)
 	//
 	// Arg:   name      type     default       description
 	puts("\n---------------------------------------------------------------------------------------");
-	CLAP_VARG(rsize,    int,     5,             "CA rule size");
-	CLAP_VARG(rlam,     double,  0.6,           "CA rule lambda");
+	CLAP_CARG(rsize,    int,     5,             "CA rule size");
+	CLAP_CARG(rlam,     double,  0.6,           "CA rule lambda");
 	CLAP_CARG(rseed,    ulong,   0,             "CA rule random seed (or 0 for unpredictable)");
-	CLAP_VARG(fsize,    int,     5,             "filter rule size");
-	CLAP_VARG(flammin,  double,  0.6,           "filter rule lambda range minimum");
-	CLAP_VARG(flammax,  double,  0.9,           "filter rule lambda range maximum");
-	CLAP_VARG(flamres,  size_t,  10,            "filter rule lambda range resolution");
+	CLAP_CARG(fsize,    int,     5,             "filter rule size");
+	CLAP_CARG(flammin,  double,  0.6,           "filter rule lambda range minimum");
+	CLAP_CARG(flammax,  double,  0.9,           "filter rule lambda range maximum");
+	CLAP_CARG(flamres,  size_t,  10,            "filter rule lambda range resolution");
 	CLAP_CARG(fseed,    ulong,   0,             "filter rule random seed (0 for unpredictable)");
 	CLAP_CARG(emmax,    int,     20,            "maximum sequence length for entropy calculation");
 	CLAP_CARG(eiff,     int,     1,             "advance before entropy");
@@ -74,11 +74,11 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	// buffer sizes for heap memory allocation
 
-	const size_t rlen = POW2(rsize);
-	const size_t flen = POW2(fsize);
+	const size_t rlen  = POW2(rsize);
+	const size_t flen  = POW2(fsize);
 	const size_t hlen  = (size_t)(emmax > tmmax ? emmax : tmmax)+1;
-	const size_t eblen     = POW2(emmax);
-	const size_t tblen    = POW2(2*tmmax);
+	const size_t eblen = POW2(emmax);
+	const size_t tblen = POW2(2*tmmax);
 
 	const unsigned long minmem =
 		nthreads*nfpert*(rlen+flen)*sizeof(word_t) +
@@ -92,7 +92,7 @@ int sim_ddr(int argc, char* argv[], int info)
 	const double mmGb = mmMb/1000.0;
 	printf("*** Dynamic memory > %.0fMb = %.2fGb\n\n",mmMb,mmGb);
 
-	if (info) return EXIT_SUCCESS; // display switches and return
+	if (info) return EXIT_SUCCESS; // display some info and return
 
 	// pseudo-random number generators
 
@@ -229,10 +229,10 @@ int sim_ddr(int argc, char* argv[], int info)
 
 	free(tfbuf);
 	free(DDbuf);
-	free(ebuf);
-	free(tbuf);
 	free(Hfbuf);
 	free(Hrbuf);
+	free(tbuf);
+	free(ebuf);
 	free(fbuf);
 	free(rbuf);
 
@@ -244,10 +244,10 @@ void* compfun(void* arg)
 	const double wts = get_wall_time();
 	const double cts = get_thread_cpu_time ();
 
-	const pthread_t tpid = pthread_self();
+	const pthread_t tpid     = pthread_self();
 	const targ_t* const targ = (targ_t*)arg;
-	const size_t tnum   = targ->tnum;
-	const size_t nfpert = targ->nfpert;
+	const size_t tnum        = targ->tnum;
+	const size_t nfpert      = targ->nfpert;
 
 	printf("thread %2zu (%zu) : %zu filters : STARTED\n",tnum+1,tpid,nfpert);
 	fflush(stdout);
@@ -270,11 +270,11 @@ void* compfun(void* arg)
 
 		const tfarg_t* const tfarg = &targ->tfargs[j];
 
-		const word_t* const rtab  = tfarg->rtab;
-		const word_t* const ftab  = tfarg->ftab;
-		double*       const Hr    = tfarg->Hr;
-		double*       const Hf    = tfarg->Hf;
-		double*       const DD    = tfarg->DD;
+		const word_t* const rtab = tfarg->rtab;
+		const word_t* const ftab = tfarg->ftab;
+		double*       const Hr   = tfarg->Hr;
+		double*       const Hf   = tfarg->Hf;
+		double*       const DD   = tfarg->DD;
 
 		for (int m=0; m<hlen; ++m) Hr[m] = NAN;
 		for (int m=0; m<hlen; ++m) Hf[m] = NAN;
