@@ -46,6 +46,11 @@ typedef uint64_t word_t;
 // Note that if p is an expression, it will be evaluated twice in undefined order - careful!
 #define PUTBIT(w,p,b) ((w) = (((w)&(~(WONE<<(p))))|((b)<<(p))))
 
+// Inline function version (returns modified word)
+static inline word_t putbit(word_t w, int p, word_t b) {
+    return (w & ~((word_t)1 << p)) | (b << p);
+}
+
 // Flip bit in word w at position p; w should be of type word_t
 #define FLIPBIT(w,p) ((w) ^= (WONE<<(p)))
 
